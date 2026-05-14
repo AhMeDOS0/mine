@@ -875,7 +875,9 @@ function applyPreferences() {
   document.getElementById("themeToggle").setAttribute("aria-label", state.settings.theme === "dark" ? "Switch to light mode" : "Switch to dark mode");
   document.getElementById("langToggle").textContent = tr("buttons.lang");
 
-  document.getElementById("pageEyebrow").textContent = current.eyebrow;
+  const dateStr = formatDate(new Date().toISOString().slice(0, 10));
+  const throughText = lang() === "ar" ? "إلى نهاية الفاينلز" : "through finals";
+  document.getElementById("pageEyebrow").textContent = `${dateStr} ${throughText}`;
 }
 
 function getRoute() {
