@@ -839,8 +839,12 @@ function saveState() {
 }
 
 function lang() {
-  if (typeof state === "undefined" || !state || !state.settings) return "ar";
-  return state.settings.lang || "ar";
+  try {
+    if (typeof state === "undefined" || !state || !state.settings) return "ar";
+    return state.settings.lang || "ar";
+  } catch {
+    return "ar";
+  }
 }
 
 function tr(path) {
@@ -2710,7 +2714,8 @@ document.addEventListener("blur", event => {
 
 window.addEventListener("hashchange", render);
 
-let state = loadState();
+let state;
+state = loadState();
 let timerInterval = null;
 render();
 document.addEventListener("input", event => {
@@ -2720,5 +2725,3 @@ document.addEventListener("input", event => {
     updateGlobalTasksDOM();
   }
 });
-
-render();
