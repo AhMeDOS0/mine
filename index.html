@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ahmed Command Center</title>
+  <meta name="description" content="Personal finals, subjects, grades, CGPA, cyber security, programming, and projects dashboard.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <span class="brand-mark">AC</span>
+      <div>
+        <strong>Ahmed Center</strong>
+        <small>Finals · Cyber · Code</small>
+      </div>
+    </div>
+
+    <nav class="nav" id="mainNav" aria-label="Main navigation"></nav>
+
+    <div class="header-actions">
+      <button class="tool-btn" id="themeToggle" data-action="toggle-theme" type="button"></button>
+      <button class="tool-btn" id="langToggle" data-action="toggle-lang" type="button"></button>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="page-title">
+      <div>
+        <p class="eyebrow" id="pageEyebrow"></p>
+        <h1 id="pageTitle"></h1>
+      </div>
+    </section>
+
+    <section id="app" class="content" tabindex="-1"></section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body>
+</html>

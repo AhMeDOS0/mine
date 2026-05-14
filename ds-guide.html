@@ -1,0 +1,2670 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Study Guide Hub</title>
+  
+  <!-- React & ReactDOM -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <!-- Babel for in-browser JSX transpilation -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <style>
+    :root {
+      --bg-color: #0d1117;
+      --sidebar-bg: #161b22;
+      --accent: #58a6ff;
+      --text: #c9d1d9;
+      --text-muted: #8b949e;
+      --border: #30363d;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text);
+    }
+    #app-container {
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .sidebar {
+      width: 280px;
+      background-color: var(--sidebar-bg);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 24px 16px;
+      z-index: 10;
+    }
+    .sidebar h1 {
+      font-size: 20px;
+      margin-top: 0;
+      margin-bottom: 30px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 12px;
+    }
+    .sidebar-section {
+      font-size: 12px;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+      padding: 0 12px;
+    }
+    .subject-btn {
+      background: transparent;
+      border: none;
+      color: var(--text);
+      text-align: left;
+      padding: 10px 12px;
+      margin-bottom: 4px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .subject-btn:hover:not(:disabled) {
+      background: rgba(255,255,255,0.05);
+    }
+    .subject-btn.active {
+      background: rgba(88, 166, 255, 0.1);
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .subject-btn:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+    .coming-soon {
+      font-size: 10px;
+      background: var(--border);
+      padding: 2px 6px;
+      border-radius: 10px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .main-content {
+      flex: 1;
+      overflow-y: auto;
+      background: var(--bg-color);
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState } = React;
+
+/* ─── tiny primitives ─────────────────────────────────────── */
+const CB = ({ code }) => (
+  <pre style={{
+    background:"#0d1117",color:"#e6edf3",padding:"16px",borderRadius:"10px",
+    overflowX:"auto",fontSize:"12.5px",lineHeight:"1.75",
+    border:"1px solid #30363d",margin:"12px 0",
+    fontFamily:"'Fira Code','Cascadia Code','Consolas',monospace",whiteSpace:"pre"
+  }}>{code.trim()}</pre>
+);
+
+const Box = ({ color="blue", title, children }) => {
+  const c = {
+    blue:  { bg:"#0c1e3c", b:"#3b82f6", t:"#93c5fd" },
+    green: { bg:"#0c2e1a", b:"#22c55e", t:"#86efac" },
+    yellow:{ bg:"#2e1e05", b:"#f59e0b", t:"#fde68a" },
+    red:   { bg:"#2e0c0c", b:"#ef4444", t:"#fca5a5" },
+    purple:{ bg:"#1e0c3c", b:"#a855f7", t:"#d8b4fe" },
+    cyan:  { bg:"#0c2535", b:"#06b6d4", t:"#67e8f9" },
+  }[color];
+  return (
+    <div style={{background:c.bg,borderLeft:`4px solid ${c.b}`,padding:"12px 16px",
+      borderRadius:"0 8px 8px 0",margin:"10px 0"}}>
+      {title && <div style={{color:c.b,fontWeight:700,fontSize:"12px",
+        textTransform:"uppercase",letterSpacing:"1px",marginBottom:"6px"}}>{title}</div>}
+      <div style={{color:c.t,lineHeight:1.6}}>{children}</div>
+    </div>
+  );
+};
+
+const H2 = ({ children }) => (
+  <h2 style={{fontSize:"22px",fontWeight:700,color:"#ffffff",margin:"24px 0 10px",
+    paddingBottom:"8px",borderBottom:"2px solid #21262d"}}>{children}</h2>
+);
+const H3 = ({ children, color="#58a6ff" }) => (
+  <h3 style={{fontSize:"17px",fontWeight:600,color,margin:"18px 0 8px"}}>{children}</h3>
+);
+const P = ({ children }) => (
+  <p style={{color:"#adbac7",lineHeight:1.8,margin:"6px 0 10px"}}>{children}</p>
+);
+const Li = ({ children }) => (
+  <li style={{color:"#adbac7",lineHeight:1.8,margin:"3px 0"}}>{children}</li>
+);
+const Ul = ({ children }) => (
+  <ul style={{paddingLeft:"20px",margin:"6px 0"}}>{children}</ul>
+);
+const Tag = ({ children, color="#3b82f6" }) => (
+  <span style={{background:color+"22",color,border:`1px solid ${color}44`,
+    borderRadius:"4px",padding:"2px 8px",fontSize:"12px",fontWeight:600,margin:"0 3px"}}>{children}</span>
+);
+
+const CompareTable = ({ headers, rows }) => (
+  <div style={{overflowX:"auto",margin:"12px 0"}}>
+    <table style={{width:"100%",borderCollapse:"collapse",fontSize:"13px"}}>
+      <thead>
+        <tr>{headers.map((h,i)=>(
+          <th key={i} style={{background:"#161b22",color:"#58a6ff",padding:"10px 14px",
+            textAlign:"left",borderBottom:"2px solid #30363d",whiteSpace:"nowrap"}}>{h}</th>
+        ))}</tr>
+      </thead>
+      <tbody>
+        {rows.map((row,i)=>(
+          <tr key={i} style={{background:i%2===0?"#0d1117":"#0f151d"}}>
+            {row.map((cell,j)=>(
+              <td key={j} style={{padding:"9px 14px",color:"#adbac7",
+                borderBottom:"1px solid #21262d"}}>{cell}</td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+);
+
+const NodeRow = ({ nodes, type="singly", circular=false }) => (
+  <div style={{display:"flex",alignItems:"center",flexWrap:"wrap",gap:"4px",
+    padding:"14px",background:"#0d1117",borderRadius:"10px",border:"1px solid #30363d",margin:"10px 0"}}>
+    {nodes.map((v,i)=>(
+      <div key={i} style={{display:"flex",alignItems:"center"}}>
+        <div style={{display:"flex",border:"2px solid #58a6ff",borderRadius:"7px",
+          overflow:"hidden",fontFamily:"monospace",fontSize:"13px"}}>
+          {type==="doubly" && <div style={{background:"#6e40c9",color:"#fff",
+            padding:"7px 9px",fontSize:"11px"}}>←</div>}
+          <div style={{background:"#1f2937",color:"#e2e8f0",
+            padding:"7px 13px",fontWeight:700}}>{v}</div>
+          <div style={{background:"#1e3a5f",color:"#58a6ff",
+            padding:"7px 9px",fontSize:"11px"}}>→</div>
+        </div>
+        {i<nodes.length-1 && <span style={{color:"#58a6ff",fontSize:"18px",margin:"0 3px"}}>
+          {type==="doubly"?"⇄":"→"}</span>}
+        {i===nodes.length-1 && (
+          <span style={{color:circular?"#f59e0b":"#ef4444",fontSize:"13px",
+            fontFamily:"monospace",marginLeft:"4px"}}>
+            {circular?"→ (head)":"→ null"}
+          </span>
+        )}
+      </div>
+    ))}
+  </div>
+);
+
+const SectionTitle = ({ icon, children }) => (
+  <div style={{display:"flex",alignItems:"center",gap:"10px",marginBottom:"6px"}}>
+    <span style={{fontSize:"24px"}}>{icon}</span>
+    <h1 style={{fontSize:"26px",fontWeight:800,color:"#ffffff",margin:0}}>{children}</h1>
+  </div>
+);
+
+/* ─── SECTION: ARRAYS ─────────────────────────────────────── */
+const ArraysContent = () => (
+  <div>
+    <SectionTitle icon="📦">Arrays – The Foundation</SectionTitle>
+    <P>An array is a <b style={{color:"#f0883e"}}>fixed-size, contiguous block of memory</b> where every element is stored one after another. Think of it like numbered lockers in a hallway — you can jump directly to locker #5 instantly.</P>
+
+    <Box color="cyan" title="Core Concept">
+      Each element sits at address = <b>base_address + (index × element_size)</b>. This is why array access is O(1) — the CPU calculates the exact address mathematically.
+    </Box>
+
+    <H3>Memory Layout</H3>
+    <div style={{padding:"14px",background:"#0d1117",borderRadius:"10px",border:"1px solid #30363d",margin:"10px 0",fontFamily:"monospace",fontSize:"13px"}}>
+      <div style={{color:"#8b949e",marginBottom:"8px"}}>int[] arr = {"{"}10, 20, 30, 40, 50{"}"}</div>
+      <div style={{display:"flex",gap:"0"}}>
+        {[["10","0x100","[0]"],["20","0x104","[1]"],["30","0x108","[2]"],["40","0x10C","[3]"],["50","0x110","[4]"]].map(([val,addr,idx],i)=>(
+          <div key={i} style={{flex:1,textAlign:"center",border:"1px solid #30363d",background:i%2===0?"#161b22":"#0d1117"}}>
+            <div style={{color:"#58a6ff",padding:"8px",fontWeight:700,fontSize:"15px"}}>{val}</div>
+            <div style={{borderTop:"1px solid #30363d",padding:"4px",color:"#3fb950",fontSize:"11px"}}>{idx}</div>
+            <div style={{borderTop:"1px solid #21262d",padding:"4px",color:"#6e7681",fontSize:"10px"}}>{addr}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <H3>Array in Java</H3>
+    <CB code={`// ─── Declaration & Initialization ───
+int[] arr1 = new int[5];               // creates [0,0,0,0,0]
+int[] arr2 = {10, 20, 30, 40, 50};     // direct initialization
+int[] arr3 = new int[]{1, 2, 3};       // combined
+
+// ─── Access & Modify ───
+int x = arr2[2];        // x = 30  (O(1) access)
+arr2[0] = 99;           // modify first element
+
+// ─── Length ───
+int len = arr2.length;  // 5
+
+// ─── Iteration ───
+for (int i = 0; i < arr2.length; i++) {
+    System.out.print(arr2[i] + " ");
+}
+// Or using enhanced for-loop:
+for (int val : arr2) {
+    System.out.print(val + " ");
+}
+
+// ─── 2D Array ───
+int[][] matrix = new int[3][4];        // 3 rows, 4 columns
+int[][] grid = {{1,2},{3,4},{5,6}};
+System.out.println(grid[1][0]);        // 3`} />
+
+    <H3>Array Operations & Time Complexity</H3>
+    <CompareTable
+      headers={["Operation","Time","Notes"]}
+      rows={[
+        ["Access arr[i]","O(1)","Direct address calculation"],
+        ["Search (unsorted)","O(n)","Must check every element"],
+        ["Search (sorted, binary)","O(log n)","Divide & conquer"],
+        ["Insert at end","O(1) amortized","If space available"],
+        ["Insert at middle/front","O(n)","Must shift elements right"],
+        ["Delete at end","O(1)","Just shrink size"],
+        ["Delete at middle/front","O(n)","Must shift elements left"],
+      ]}
+    />
+
+    <H3>Arrays vs Linked Lists — Quick Overview</H3>
+    <CompareTable
+      headers={["Feature","Array","Linked List"]}
+      rows={[
+        ["Memory","Contiguous (fixed)","Non-contiguous (dynamic)"],
+        ["Size","Fixed at creation","Grows/shrinks anytime"],
+        ["Access","O(1) random access","O(n) sequential"],
+        ["Insert/Delete","O(n) — shifting needed","O(1) at known node"],
+        ["Memory overhead","None","Extra pointer per node"],
+        ["Cache friendly","✅ Yes","❌ No (scattered memory)"],
+        ["Use when","Size known, frequent access","Frequent insert/delete"],
+      ]}
+    />
+
+    <Box color="yellow" title="When to choose Array?">
+      ✅ You know the size upfront &nbsp;|&nbsp; ✅ You need fast random access &nbsp;|&nbsp; ✅ Cache performance matters (gaming, graphics)
+    </Box>
+    <Box color="green" title="When to choose Linked List?">
+      ✅ Size changes constantly &nbsp;|&nbsp; ✅ Frequent insert/delete at front/middle &nbsp;|&nbsp; ✅ You never need random access
+    </Box>
+  </div>
+);
+
+/* ─── SECTION: LINKED LISTS ───────────────────────────────── */
+const LLContent = () => {
+  const [sub, setSub] = useState("singly");
+  const subs = [
+    {id:"singly",label:"🔗 Singly LL"},
+    {id:"doubly",label:"⇄ Doubly LL"},
+    {id:"circular",label:"🔄 Circular LL"},
+    {id:"compare",label:"📊 Comparison"},
+    {id:"examples",label:"💡 Examples"},
+  ];
+  return (
+    <div>
+      <SectionTitle icon="🔗">Linked Lists — Complete Guide</SectionTitle>
+      <P>A Linked List is a <b style={{color:"#f0883e"}}>dynamic data structure</b> where each element (node) contains data and a pointer to the next node. Nodes can be anywhere in memory — they are connected by pointers, not location.</P>
+
+      <div style={{display:"flex",gap:"8px",flexWrap:"wrap",margin:"16px 0"}}>
+        {subs.map(s=>(
+          <button key={s.id} onClick={()=>setSub(s.id)}
+            style={{padding:"8px 16px",borderRadius:"20px",border:"none",cursor:"pointer",
+              fontWeight:600,fontSize:"13px",transition:"all 0.2s",
+              background:sub===s.id?"#58a6ff":"#21262d",
+              color:sub===s.id?"#0d1117":"#adbac7"}}>
+            {s.label}
+          </button>
+        ))}
+      </div>
+
+      {sub==="singly" && <SinglyLL />}
+      {sub==="doubly" && <DoublyLL />}
+      {sub==="circular" && <CircularLL />}
+      {sub==="compare" && <LLCompare />}
+      {sub==="examples" && <LLExamples />}
+    </div>
+  );
+};
+
+const SinglyLL = () => (
+  <div>
+    <H2>Singly Linked List</H2>
+    <P>Each node has <Tag>data</Tag> and one pointer <Tag>next</Tag> pointing to the next node. The last node's next is <Tag color="#ef4444">null</Tag>.</P>
+    <NodeRow nodes={[10,20,30,40,50]} />
+    <CB code={`// ─── Node class ───
+class Node {
+    int data;
+    Node next;
+
+    Node(int data) {
+        this.data = data;
+        this.next = null;
+    }
+}
+
+// ─── Singly Linked List class ───
+class SinglyLinkedList {
+    Node head;      // points to first node
+    int size = 0;
+
+    // ── Add at beginning  O(1)
+    void addFirst(int data) {
+        Node newNode = new Node(data);
+        newNode.next = head;
+        head = newNode;
+        size++;
+    }
+
+    // ── Add at end  O(n)
+    void addLast(int data) {
+        Node newNode = new Node(data);
+        if (head == null) { head = newNode; size++; return; }
+        Node curr = head;
+        while (curr.next != null) curr = curr.next;
+        curr.next = newNode;
+        size++;
+    }
+
+    // ── Add at specific index  O(n)
+    void addAt(int index, int data) {
+        if (index < 0 || index > size) throw new IndexOutOfBoundsException();
+        if (index == 0) { addFirst(data); return; }
+        Node newNode = new Node(data);
+        Node curr = head;
+        for (int i = 0; i < index - 1; i++) curr = curr.next;
+        newNode.next = curr.next;
+        curr.next = newNode;
+        size++;
+    }
+
+    // ── Remove from beginning  O(1)
+    int removeFirst() {
+        if (head == null) throw new RuntimeException("List is empty");
+        int val = head.data;
+        head = head.next;
+        size--;
+        return val;
+    }
+
+    // ── Remove from end  O(n)
+    int removeLast() {
+        if (head == null) throw new RuntimeException("List is empty");
+        if (head.next == null) { int val=head.data; head=null; size--; return val; }
+        Node curr = head;
+        while (curr.next.next != null) curr = curr.next;
+        int val = curr.next.data;
+        curr.next = null;
+        size--;
+        return val;
+    }
+
+    // ── Remove at specific index  O(n)
+    int removeAt(int index) {
+        if (index < 0 || index >= size) throw new IndexOutOfBoundsException();
+        if (index == 0) return removeFirst();
+        Node curr = head;
+        for (int i = 0; i < index - 1; i++) curr = curr.next;
+        int val = curr.next.data;
+        curr.next = curr.next.next;
+        size--;
+        return val;
+    }
+
+    // ── Get value at index  O(n)
+    int get(int index) {
+        if (index < 0 || index >= size) throw new IndexOutOfBoundsException();
+        Node curr = head;
+        for (int i = 0; i < index; i++) curr = curr.next;
+        return curr.data;
+    }
+
+    // ── Search  O(n)
+    boolean contains(int data) {
+        Node curr = head;
+        while (curr != null) {
+            if (curr.data == data) return true;
+            curr = curr.next;
+        }
+        return false;
+    }
+
+    // ── Size, isEmpty
+    int size() { return size; }
+    boolean isEmpty() { return head == null; }
+
+    // ── Print list
+    void print() {
+        Node curr = head;
+        StringBuilder sb = new StringBuilder("HEAD -> ");
+        while (curr != null) {
+            sb.append(curr.data);
+            sb.append(curr.next != null ? " -> " : " -> NULL");
+            curr = curr.next;
+        }
+        System.out.println(sb);
+    }
+}
+
+// ─── Usage Example ───
+public class Main {
+    public static void main(String[] args) {
+        SinglyLinkedList list = new SinglyLinkedList();
+        list.addLast(10);
+        list.addLast(20);
+        list.addLast(30);
+        list.addFirst(5);
+        list.addAt(2, 15);
+        list.print();
+        // HEAD -> 5 -> 10 -> 15 -> 20 -> 30 -> NULL
+        System.out.println("Removed: " + list.removeFirst()); // 5
+        System.out.println("Contains 20: " + list.contains(20)); // true
+        list.print();
+        // HEAD -> 10 -> 15 -> 20 -> 30 -> NULL
+    }
+}`} />
+  </div>
+);
+
+const DoublyLL = () => (
+  <div>
+    <H2>Doubly Linked List</H2>
+    <P>Each node has <Tag>data</Tag>, a <Tag color="#a855f7">prev</Tag> pointer, and a <Tag>next</Tag> pointer. You can traverse <b>both forward and backward</b>.</P>
+    <NodeRow nodes={[10,20,30,40,50]} type="doubly" />
+    <Box color="purple" title="Key Difference from Singly">
+      Extra <b>prev</b> pointer per node. Removing a node is O(1) if you have a reference to it (no need to find the previous node). Uses more memory.
+    </Box>
+    <CB code={`// ─── Node class for Doubly LL ───
+class DNode {
+    int data;
+    DNode prev, next;
+
+    DNode(int data) { this.data = data; }
+}
+
+class DoublyLinkedList {
+    DNode head, tail;   // track both ends
+    int size = 0;
+
+    // ── Add at beginning  O(1)
+    void addFirst(int data) {
+        DNode node = new DNode(data);
+        if (head == null) { head = tail = node; size++; return; }
+        node.next = head;
+        head.prev = node;
+        head = node;
+        size++;
+    }
+
+    // ── Add at end  O(1)  ← advantage over singly!
+    void addLast(int data) {
+        DNode node = new DNode(data);
+        if (tail == null) { head = tail = node; size++; return; }
+        tail.next = node;
+        node.prev = tail;
+        tail = node;
+        size++;
+    }
+
+    // ── Add at index  O(n)
+    void addAt(int index, int data) {
+        if (index == 0) { addFirst(data); return; }
+        if (index == size) { addLast(data); return; }
+        DNode node = new DNode(data);
+        DNode curr = head;
+        for (int i = 0; i < index - 1; i++) curr = curr.next;
+        node.next = curr.next;
+        node.prev = curr;
+        if (curr.next != null) curr.next.prev = node;
+        curr.next = node;
+        size++;
+    }
+
+    // ── Remove from beginning  O(1)
+    int removeFirst() {
+        if (head == null) throw new RuntimeException("Empty");
+        int val = head.data;
+        head = head.next;
+        if (head != null) head.prev = null;
+        else tail = null;
+        size--;
+        return val;
+    }
+
+    // ── Remove from end  O(1)  ← major advantage!
+    int removeLast() {
+        if (tail == null) throw new RuntimeException("Empty");
+        int val = tail.data;
+        tail = tail.prev;
+        if (tail != null) tail.next = null;
+        else head = null;
+        size--;
+        return val;
+    }
+
+    // ── Remove a specific node  O(1) (if you have reference)
+    void removeNode(DNode node) {
+        if (node.prev != null) node.prev.next = node.next;
+        else head = node.next;    // it was head
+        if (node.next != null) node.next.prev = node.prev;
+        else tail = node.prev;    // it was tail
+        size--;
+    }
+
+    // ── Print forward
+    void printForward() {
+        DNode curr = head;
+        System.out.print("NULL <-> ");
+        while (curr != null) {
+            System.out.print(curr.data + (curr.next!=null?" <-> ":" <-> NULL"));
+            curr = curr.next;
+        }
+        System.out.println();
+    }
+
+    // ── Print backward
+    void printBackward() {
+        DNode curr = tail;
+        System.out.print("NULL <-> ");
+        while (curr != null) {
+            System.out.print(curr.data + (curr.prev!=null?" <-> ":" <-> NULL"));
+            curr = curr.prev;
+        }
+        System.out.println();
+    }
+}`} />
+  </div>
+);
+
+const CircularLL = () => (
+  <div>
+    <H2>Circular Linked List</H2>
+    <P>The last node's <Tag>next</Tag> points back to the <Tag color="#f59e0b">head</Tag> instead of null. It can be singly or doubly circular. Great for round-robin scheduling, music playlists, etc.</P>
+    <NodeRow nodes={[10,20,30,40,50]} circular />
+    <CB code={`// ─── Circular Singly Linked List ───
+class CircularSinglyLL {
+    Node head;
+    int size = 0;
+
+    // ── Add at end  O(n)
+    void add(int data) {
+        Node node = new Node(data);
+        if (head == null) {
+            head = node;
+            node.next = head;   // points to itself!
+            size++; return;
+        }
+        // Find last node (whose next == head)
+        Node last = head;
+        while (last.next != head) last = last.next;
+        last.next = node;
+        node.next = head;       // new node points back to head
+        size++;
+    }
+
+    // ── Add at beginning  O(n)
+    void addFirst(int data) {
+        Node node = new Node(data);
+        if (head == null) { head = node; node.next = head; size++; return; }
+        Node last = head;
+        while (last.next != head) last = last.next;
+        node.next = head;
+        head = node;
+        last.next = head;   // update last node to new head
+        size++;
+    }
+
+    // ── Remove from beginning  O(n)
+    int removeFirst() {
+        if (head == null) throw new RuntimeException("Empty");
+        int val = head.data;
+        if (head.next == head) { head = null; size--; return val; }
+        Node last = head;
+        while (last.next != head) last = last.next;
+        head = head.next;
+        last.next = head;   // last now points to new head
+        size--;
+        return val;
+    }
+
+    // ── Print (stop when we loop back)
+    void print() {
+        if (head == null) return;
+        Node curr = head;
+        do {
+            System.out.print(curr.data);
+            curr = curr.next;
+            if (curr != head) System.out.print(" -> ");
+        } while (curr != head);
+        System.out.println(" -> (back to " + head.data + ")");
+    }
+
+    // ── Search
+    boolean contains(int data) {
+        if (head == null) return false;
+        Node curr = head;
+        do {
+            if (curr.data == data) return true;
+            curr = curr.next;
+        } while (curr != head);
+        return false;
+    }
+}
+
+// ─── Circular Doubly Linked List ───
+class CircularDoublyLL {
+    DNode head;
+    int size = 0;
+
+    void add(int data) {
+        DNode node = new DNode(data);
+        if (head == null) {
+            head = node;
+            node.next = node.prev = head;  // both point to itself
+            size++; return;
+        }
+        DNode last = head.prev;   // in circular doubly, head.prev IS the last!
+        last.next = node;
+        node.prev = last;
+        node.next = head;
+        head.prev = node;
+        size++;
+    }
+
+    void print() {
+        if (head == null) return;
+        DNode curr = head;
+        do {
+            System.out.print(curr.data);
+            curr = curr.next;
+            if (curr != head) System.out.print(" <-> ");
+        } while (curr != head);
+        System.out.println(" <-> (back to " + head.data + ")");
+    }
+}`} />
+  </div>
+);
+
+const LLCompare = () => (
+  <div>
+    <H2>Comparison of All Linked List Types</H2>
+    <CompareTable
+      headers={["Feature","Singly","Doubly","Circular Singly","Circular Doubly"]}
+      rows={[
+        ["Pointers per node","1 (next)","2 (prev+next)","1 (next)","2 (prev+next)"],
+        ["Traverse direction","Forward only","Both directions","Forward only","Both directions"],
+        ["Last node points to","null","null","head","head"],
+        ["Memory per node","Low","Higher","Low","Higher"],
+        ["Remove last node","O(n)","O(1) via tail","O(n)","O(1)"],
+        ["Remove any node","O(n) prev search","O(1) with ref","O(n)","O(1) with ref"],
+        ["Use case","Simple list, stacks","Browsers, undo/redo","Round-robin","Music playlist, games"],
+      ]}
+    />
+    <H3>Visual Summary</H3>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px",margin:"10px 0"}}>
+      {[
+        {title:"Singly Linked List",desc:"1 pointer. Forward only. Simplest. Use for stacks, queues.",color:"#58a6ff"},
+        {title:"Doubly Linked List",desc:"2 pointers. Both directions. Flexible but more memory.",color:"#a855f7"},
+        {title:"Circular Singly",desc:"Last → Head. No null end. Round-robin tasks, music loops.",color:"#f59e0b"},
+        {title:"Circular Doubly",desc:"Most powerful. Both directions + circular. Browser history.",color:"#22c55e"},
+      ].map((item,i)=>(
+        <div key={i} style={{background:"#161b22",border:`1px solid ${item.color}44`,
+          borderRadius:"10px",padding:"14px"}}>
+          <div style={{color:item.color,fontWeight:700,marginBottom:"6px"}}>{item.title}</div>
+          <div style={{color:"#8b949e",fontSize:"13px"}}>{item.desc}</div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+const LLExamples = () => {
+  const [ex, setEx] = useState(0);
+  const examples = [
+    {
+      title:"Delete Middle Node",
+      desc:"Use slow/fast pointer technique (Floyd's algorithm). Fast moves 2 steps, slow moves 1 step. When fast reaches end, slow is at middle.",
+      code:`// ─── Delete Middle Node (Floyd's two-pointer) ───
+void deleteMiddle() {
+    if (head == null || head.next == null) {
+        head = null; // 0 or 1 node, delete it
+        return;
+    }
+    Node slow = head;
+    Node fast = head;
+    Node prev = null;
+
+    while (fast != null && fast.next != null) {
+        fast = fast.next.next;  // 2 steps
+        prev = slow;
+        slow = slow.next;       // 1 step
+    }
+    // slow is now at middle, prev is before it
+    prev.next = slow.next;
+    System.out.println("Deleted middle: " + slow.data);
+}
+
+// Example: [1] -> [2] -> [3] -> [4] -> [5]
+// slow stops at [3], prev is at [2]
+// Result:   [1] -> [2] -> [4] -> [5]`
+    },
+    {
+      title:"Update / Change a Node",
+      desc:"Find the node at a given index and update its data value.",
+      code:`// ─── Update node at specific index ───
+void updateAt(int index, int newData) {
+    if (index < 0 || index >= size) throw new IndexOutOfBoundsException();
+    Node curr = head;
+    for (int i = 0; i < index; i++) curr = curr.next;
+    System.out.println("Changed " + curr.data + " -> " + newData + " at index " + index);
+    curr.data = newData;
+}
+
+// Update by value (find first occurrence and change it)
+void updateValue(int oldData, int newData) {
+    Node curr = head;
+    while (curr != null) {
+        if (curr.data == oldData) {
+            curr.data = newData;
+            return;
+        }
+        curr = curr.next;
+    }
+    System.out.println("Value " + oldData + " not found");
+}
+
+// Usage:
+// list:  [10] -> [20] -> [30] -> [40]
+// list.updateAt(2, 99);
+// result:[10] -> [20] -> [99] -> [40]`
+    },
+    {
+      title:"Remove Nodes at Odd Positions",
+      desc:"Remove nodes at positions 1,3,5,... (1-indexed). Keep nodes at even positions.",
+      code:`// ─── Remove nodes at ODD positions (1-indexed: 1,3,5,...) ───
+void removeOddPositions() {
+    if (head == null) return;
+
+    // Position 1 (head) is odd — remove it
+    head = head.next;
+
+    // Now curr is at position 2 (even). We keep it,
+    // and skip position 3 (its next), and so on.
+    Node curr = head;
+    while (curr != null && curr.next != null) {
+        curr.next = curr.next.next;  // skip the odd-position node
+        curr = curr.next;
+    }
+}
+
+// ─── Remove nodes at EVEN positions (2,4,6,...) ───
+void removeEvenPositions() {
+    if (head == null || head.next == null) return;
+    Node curr = head;
+    while (curr != null && curr.next != null) {
+        curr.next = curr.next.next;  // skip even-position node
+        curr = curr.next;
+    }
+}
+
+// Example:
+// Original:        [A] -> [B] -> [C] -> [D] -> [E]
+// Position:         1      2      3      4      5
+// After removeOdd: [B] -> [D]        (kept even positions)
+// After removeEven:[A] -> [C] -> [E] (kept odd positions)`
+    },
+    {
+      title:"Remove Nodes with Odd Values",
+      desc:"Keep only even-valued nodes, delete nodes that have odd values.",
+      code:`// ─── Remove nodes whose value is ODD ───
+void removeOddValues() {
+    // Skip odd-valued nodes at the head
+    while (head != null && head.data % 2 != 0) {
+        head = head.next;
+    }
+    if (head == null) return;
+
+    Node curr = head;
+    while (curr != null && curr.next != null) {
+        if (curr.next.data % 2 != 0) {
+            curr.next = curr.next.next;  // skip odd-valued node
+        } else {
+            curr = curr.next;
+        }
+    }
+}
+
+// ─── Remove nodes whose value is EVEN ───
+void removeEvenValues() {
+    while (head != null && head.data % 2 == 0) {
+        head = head.next;
+    }
+    if (head == null) return;
+
+    Node curr = head;
+    while (curr != null && curr.next != null) {
+        if (curr.next.data % 2 == 0) {
+            curr.next = curr.next.next;  // skip even-valued node
+        } else {
+            curr = curr.next;
+        }
+    }
+}
+
+// Example:
+// Original:           [1] -> [2] -> [3] -> [4] -> [5] -> [6]
+// After removeOdd:    [2] -> [4] -> [6]
+// After removeEven:   [1] -> [3] -> [5]`
+    },
+    {
+      title:"Reverse Linked List",
+      desc:"Reverse the list by changing all next pointers. O(n) time, O(1) space.",
+      code:`// ─── Reverse Singly Linked List (Iterative) ───
+void reverse() {
+    Node prev = null;
+    Node curr = head;
+    Node next = null;
+
+    while (curr != null) {
+        next = curr.next;   // save next
+        curr.next = prev;   // reverse pointer
+        prev = curr;        // move prev forward
+        curr = next;        // move curr forward
+    }
+    head = prev;   // prev is now the new head
+}
+
+// ─── Reverse Recursively ───
+Node reverseRecursive(Node node) {
+    if (node == null || node.next == null) return node;
+    Node rest = reverseRecursive(node.next);
+    node.next.next = node;
+    node.next = null;
+    return rest;
+}
+void reverseRec() { head = reverseRecursive(head); }
+
+// Step-by-step for [1]->[2]->[3]->[4]:
+// Start: prev=null, curr=1
+// Step1: 1->null,   prev=1, curr=2
+// Step2: 2->1,      prev=2, curr=3
+// Step3: 3->2,      prev=3, curr=4
+// Step4: 4->3,      prev=4, curr=null
+// head = prev = 4
+// Result: [4]->[3]->[2]->[1]`
+    },
+    {
+      title:"Find Middle Node",
+      desc:"Find the middle node using slow/fast pointers. Fast goes 2x speed.",
+      code:`// ─── Find Middle Node (Two-pointer / Tortoise & Hare) ───
+Node findMiddle() {
+    if (head == null) return null;
+    Node slow = head;
+    Node fast = head;
+
+    while (fast != null && fast.next != null) {
+        slow = slow.next;        // 1 step
+        fast = fast.next.next;   // 2 steps
+    }
+    return slow; // slow is at middle!
+}
+
+// For odd-length: [1]->[2]->[3]->[4]->[5]
+//   slow stops at 3 (exact middle)
+// For even-length: [1]->[2]->[3]->[4]
+//   slow stops at 3 (second middle)
+
+// ─── Find Nth Node from End ───
+Node nthFromEnd(int n) {
+    Node ahead = head;
+    Node behind = head;
+
+    // Move ahead n steps
+    for (int i = 0; i < n; i++) {
+        if (ahead == null) return null; // n > size
+        ahead = ahead.next;
+    }
+
+    // Move both until ahead reaches end
+    while (ahead != null) {
+        ahead = ahead.next;
+        behind = behind.next;
+    }
+    return behind; // behind is now n from end
+}`
+    },
+    {
+      title:"Detect & Remove Loop/Cycle",
+      desc:"Use Floyd's cycle detection. Fast and slow pointers will meet if there's a loop.",
+      code:`// ─── Detect Loop (Floyd's Cycle Detection) ───
+boolean hasLoop() {
+    Node slow = head, fast = head;
+    while (fast != null && fast.next != null) {
+        slow = slow.next;
+        fast = fast.next.next;
+        if (slow == fast) return true; // they meet = loop!
+    }
+    return false;
+}
+
+// ─── Detect AND Remove Loop ───
+void removeLoop() {
+    Node slow = head, fast = head;
+    boolean loopExists = false;
+
+    // Detect
+    while (fast != null && fast.next != null) {
+        slow = slow.next;
+        fast = fast.next.next;
+        if (slow == fast) { loopExists = true; break; }
+    }
+    if (!loopExists) return;
+
+    // Find loop start: reset slow to head
+    slow = head;
+    if (slow == fast) {
+        while (fast.next != slow) fast = fast.next;
+    } else {
+        while (slow.next != fast.next) {
+            slow = slow.next;
+            fast = fast.next;
+        }
+    }
+    // fast.next is the start of loop - break it
+    fast.next = null;
+}
+
+// ─── Check if List is Palindrome ───
+boolean isPalindrome() {
+    if (head == null || head.next == null) return true;
+    // Find middle
+    Node slow = head, fast = head;
+    while (fast != null && fast.next != null) {
+        slow = slow.next;
+        fast = fast.next.next;
+    }
+    // Reverse second half
+    Node prev = null, curr = slow;
+    while (curr != null) {
+        Node next = curr.next;
+        curr.next = prev;
+        prev = curr;
+        curr = next;
+    }
+    // Compare first and reversed second half
+    Node left = head, right = prev;
+    while (right != null) {
+        if (left.data != right.data) return false;
+        left = left.next;
+        right = right.next;
+    }
+    return true;
+}`
+    },
+    {
+      title:"Merge Two Sorted Lists",
+      desc:"Merge two already-sorted linked lists into one sorted linked list.",
+      code:`// ─── Merge Two Sorted Linked Lists ───
+Node mergeSorted(Node l1, Node l2) {
+    // Dummy head to simplify edge cases
+    Node dummy = new Node(0);
+    Node curr = dummy;
+
+    while (l1 != null && l2 != null) {
+        if (l1.data <= l2.data) {
+            curr.next = l1;
+            l1 = l1.next;
+        } else {
+            curr.next = l2;
+            l2 = l2.next;
+        }
+        curr = curr.next;
+    }
+    // Attach remaining nodes
+    curr.next = (l1 != null) ? l1 : l2;
+    return dummy.next;
+}
+
+// Example:
+// L1: [1] -> [3] -> [5] -> [7]
+// L2: [2] -> [4] -> [6] -> [8]
+// Result: [1]->[2]->[3]->[4]->[5]->[6]->[7]->[8]
+
+// ─── Sort a Linked List (Merge Sort) ───
+Node mergeSort(Node head) {
+    if (head == null || head.next == null) return head;
+    // Find middle
+    Node slow = head, fast = head.next;
+    while (fast != null && fast.next != null) {
+        slow = slow.next;
+        fast = fast.next.next;
+    }
+    Node mid = slow.next;
+    slow.next = null; // split list
+    // Recursively sort both halves
+    Node left = mergeSort(head);
+    Node right = mergeSort(mid);
+    return mergeSorted(left, right);
+}`
+    },
+  ];
+  return (
+    <div>
+      <H2>Linked List — Practical Examples</H2>
+      <div style={{display:"flex",gap:"6px",flexWrap:"wrap",margin:"12px 0"}}>
+        {examples.map((e,i)=>(
+          <button key={i} onClick={()=>setEx(i)}
+            style={{padding:"7px 13px",borderRadius:"20px",border:"none",cursor:"pointer",
+              fontWeight:500,fontSize:"12px",transition:"all 0.2s",whiteSpace:"nowrap",
+              background:ex===i?"#238636":"#21262d",
+              color:ex===i?"#ffffff":"#adbac7"}}>
+            {i+1}. {e.title}
+          </button>
+        ))}
+      </div>
+      <Box color="green" title={`Example ${ex+1}: ${examples[ex].title}`}>
+        {examples[ex].desc}
+      </Box>
+      <CB code={examples[ex].code} />
+    </div>
+  );
+};
+
+/* ─── SECTION: STACK ─────────────────────────────────────── */
+const StackContent = () => {
+  const [sub, setSub] = useState("concept");
+  const subs = [
+    {id:"concept",label:"📚 Concept"},
+    {id:"array",label:"🔢 With Array"},
+    {id:"ll",label:"🔗 With LL"},
+    {id:"apps",label:"⚡ Applications"},
+  ];
+  return (
+    <div>
+      <SectionTitle icon="📚">Stack — Complete Guide</SectionTitle>
+      <div style={{display:"flex",gap:"8px",flexWrap:"wrap",margin:"16px 0"}}>
+        {subs.map(s=>(
+          <button key={s.id} onClick={()=>setSub(s.id)}
+            style={{padding:"8px 16px",borderRadius:"20px",border:"none",cursor:"pointer",
+              fontWeight:600,fontSize:"13px",transition:"all 0.2s",
+              background:sub===s.id?"#f0883e":"#21262d",
+              color:sub===s.id?"#0d1117":"#adbac7"}}>
+            {s.label}
+          </button>
+        ))}
+      </div>
+      {sub==="concept" && <StackConcept />}
+      {sub==="array" && <StackArray />}
+      {sub==="ll" && <StackLL />}
+      {sub==="apps" && <StackApps />}
+    </div>
+  );
+};
+
+const StackConcept = () => (
+  <div>
+    <H2>What is a Stack?</H2>
+    <P>A Stack is a <b style={{color:"#f0883e"}}>LIFO</b> (Last In, First Out) data structure. The last element added is the first one removed — like a stack of plates.</P>
+    <div style={{display:"flex",gap:"12px",flexWrap:"wrap",margin:"12px 0"}}>
+      <div style={{flex:"1 1 200px",background:"#161b22",borderRadius:"10px",padding:"16px",border:"1px solid #30363d"}}>
+        <div style={{textAlign:"center",marginBottom:"8px",color:"#f0883e",fontWeight:700}}>Stack (LIFO)</div>
+        {[50,30,20,10].map((v,i)=>(
+          <div key={i} style={{background:i===0?"#f0883e22":"#1f2937",
+            border:`1px solid ${i===0?"#f0883e":"#30363d"}`,
+            borderRadius:"6px",padding:"10px",textAlign:"center",
+            color:i===0?"#f0883e":"#e2e8f0",fontWeight:700,
+            fontFamily:"monospace",marginBottom:"4px"}}>
+            {v} {i===0?"← TOP":""}
+          </div>
+        ))}
+        <div style={{borderTop:"2px solid #58a6ff",marginTop:"8px",
+          color:"#58a6ff",textAlign:"center",fontSize:"12px",paddingTop:"4px"}}>BOTTOM</div>
+      </div>
+      <div style={{flex:"2 1 300px"}}>
+        <Box color="yellow" title="Core Operations">
+          <b>push(x)</b> — Add element to top<br/>
+          <b>pop()</b> — Remove & return top element<br/>
+          <b>peek()</b> — View top without removing<br/>
+          <b>isEmpty()</b> — Check if stack is empty<br/>
+          <b>size()</b> — Number of elements
+        </Box>
+        <Box color="blue" title="All operations are O(1)!">
+          Push, pop, and peek are all constant time. This makes stacks extremely efficient.
+        </Box>
+        <Box color="green" title="Real-World Analogies">
+          📚 Stack of books &nbsp;|&nbsp; 🍽️ Stack of plates<br/>
+          ↩️ Browser back button &nbsp;|&nbsp; Ctrl+Z undo<br/>
+          📞 Function call stack in programs
+        </Box>
+      </div>
+    </div>
+    <H3>Why Use a Stack?</H3>
+    <Ul>
+      <Li>Function calls — each call is pushed, return pops it (call stack)</Li>
+      <Li>Undo/redo operations in editors, design tools</Li>
+      <Li>Expression evaluation (calculators, compilers)</Li>
+      <Li>Backtracking algorithms (mazes, DFS graph traversal)</Li>
+      <Li>Syntax checking (bracket/parenthesis matching)</Li>
+      <Li>Number system conversion (decimal → binary)</Li>
+      <Li>Reversing data (strings, arrays, sequences)</Li>
+    </Ul>
+  </div>
+);
+
+const StackArray = () => (
+  <div>
+    <H2>Stack Implementation Using Array</H2>
+    <Box color="blue" title="How it works">
+      Use an array + an integer <b>top</b> that tracks the index of the top element. Start with top = -1 (empty). Push increments top first, pop returns and decrements.
+    </Box>
+    <CB code={`// ─── Stack Using Array ───
+class StackArray {
+    private int[] arr;
+    private int top;
+    private int capacity;
+
+    // Constructor
+    StackArray(int capacity) {
+        this.capacity = capacity;
+        arr = new int[capacity];
+        top = -1;   // -1 means empty
+    }
+
+    // ── Push  O(1)
+    void push(int data) {
+        if (top == capacity - 1) {
+            System.out.println("Stack Overflow! Cannot push " + data);
+            return;
+        }
+        arr[++top] = data;
+    }
+
+    // ── Pop  O(1)
+    int pop() {
+        if (isEmpty()) {
+            System.out.println("Stack Underflow!");
+            return -1;
+        }
+        return arr[top--];
+    }
+
+    // ── Peek  O(1)
+    int peek() {
+        if (isEmpty()) {
+            System.out.println("Stack is empty");
+            return -1;
+        }
+        return arr[top];
+    }
+
+    // ── Checks
+    boolean isEmpty() { return top == -1; }
+    boolean isFull()  { return top == capacity - 1; }
+    int size()        { return top + 1; }
+
+    // ── Print stack
+    void print() {
+        if (isEmpty()) { System.out.println("[]"); return; }
+        System.out.print("TOP -> ");
+        for (int i = top; i >= 0; i--) {
+            System.out.print("[" + arr[i] + "] ");
+        }
+        System.out.println("<- BOTTOM");
+    }
+}
+
+// ─── Dynamic Stack (auto-resize like ArrayList) ───
+class DynamicStack {
+    private int[] arr;
+    private int top;
+    private int capacity;
+
+    DynamicStack(int initialCapacity) {
+        capacity = initialCapacity;
+        arr = new int[capacity];
+        top = -1;
+    }
+
+    void push(int data) {
+        if (top == capacity - 1) resize();   // double size when full
+        arr[++top] = data;
+    }
+
+    private void resize() {
+        capacity *= 2;
+        int[] newArr = new int[capacity];
+        System.arraycopy(arr, 0, newArr, 0, top + 1);
+        arr = newArr;
+        System.out.println("Resized to " + capacity);
+    }
+
+    int pop()      { if (isEmpty()) return -1; return arr[top--]; }
+    int peek()     { if (isEmpty()) return -1; return arr[top]; }
+    boolean isEmpty() { return top == -1; }
+    int size()     { return top + 1; }
+}
+
+// ─── Usage ───
+public class Main {
+    public static void main(String[] args) {
+        StackArray s = new StackArray(5);
+        s.push(10);  s.push(20);  s.push(30);
+        s.print();       // TOP -> [30] [20] [10] <- BOTTOM
+        System.out.println(s.peek());   // 30
+        System.out.println(s.pop());    // 30
+        System.out.println(s.pop());    // 20
+        s.print();       // TOP -> [10] <- BOTTOM
+    }
+}`} />
+  </div>
+);
+
+const StackLL = () => (
+  <div>
+    <H2>Stack Implementation Using Linked List</H2>
+    <Box color="green" title="Advantage over Array Stack">
+      No fixed size limit! The stack grows dynamically. Push = add to head (front of list). Pop = remove from head. Both are O(1).
+    </Box>
+    <CB code={`// ─── Stack Using Linked List ───
+class StackNode {
+    int data;
+    StackNode next;
+    StackNode(int data) { this.data = data; }
+}
+
+class StackLL {
+    private StackNode top;  // top of stack = head of list
+    private int size;
+
+    // ── Push  O(1)  — add new node at head
+    void push(int data) {
+        StackNode node = new StackNode(data);
+        node.next = top;
+        top = node;
+        size++;
+    }
+
+    // ── Pop  O(1)  — remove head node
+    int pop() {
+        if (isEmpty()) throw new RuntimeException("Stack Underflow");
+        int val = top.data;
+        top = top.next;
+        size--;
+        return val;
+    }
+
+    // ── Peek  O(1)
+    int peek() {
+        if (isEmpty()) throw new RuntimeException("Stack is empty");
+        return top.data;
+    }
+
+    boolean isEmpty() { return top == null; }
+    int size()        { return size; }
+
+    // ── Print stack
+    void print() {
+        StackNode curr = top;
+        System.out.print("TOP -> ");
+        while (curr != null) {
+            System.out.print("[" + curr.data + "] -> ");
+            curr = curr.next;
+        }
+        System.out.println("NULL (BOTTOM)");
+    }
+}
+
+// ─── Generic Stack (works with any type) ───
+class GenericStack<T> {
+    private static class Node<T> {
+        T data; Node<T> next;
+        Node(T data) { this.data = data; }
+    }
+    private Node<T> top;
+    private int size;
+
+    void push(T data) {
+        Node<T> node = new Node<>(data);
+        node.next = top;
+        top = node;
+        size++;
+    }
+    T pop() {
+        if (isEmpty()) throw new RuntimeException("Empty");
+        T val = top.data;
+        top = top.next;
+        size--;
+        return val;
+    }
+    T peek()          { if (isEmpty()) throw new RuntimeException(); return top.data; }
+    boolean isEmpty() { return top == null; }
+    int size()        { return size; }
+}
+
+// Usage:
+// GenericStack<String> strStack = new GenericStack<>();
+// strStack.push("hello"); strStack.push("world");
+// System.out.println(strStack.pop()); // world`} />
+  </div>
+);
+
+const StackApps = () => {
+  const [app, setApp] = useState(0);
+  const apps = [
+    {
+      title:"Reverse a String",
+      color:"#58a6ff",
+      desc:"Push all characters onto a stack, then pop them all — they come out in reverse order due to LIFO.",
+      code:`import java.util.Stack;
+
+// ─── Reverse a String using Stack ───
+public static String reverseString(String s) {
+    Stack<Character> stack = new Stack<>();
+    
+    // Push all characters
+    for (char c : s.toCharArray()) {
+        stack.push(c);
+    }
+    
+    // Pop all characters (LIFO = reversed)
+    StringBuilder sb = new StringBuilder();
+    while (!stack.isEmpty()) {
+        sb.append(stack.pop());
+    }
+    return sb.toString();
+}
+
+// ─── Reverse an Integer Array using Stack ───
+public static int[] reverseArray(int[] arr) {
+    Stack<Integer> stack = new Stack<>();
+    for (int n : arr) stack.push(n);
+    int[] result = new int[arr.length];
+    for (int i = 0; i < arr.length; i++) result[i] = stack.pop();
+    return result;
+}
+
+// ─── Reverse words in a sentence ───
+public static String reverseWords(String sentence) {
+    Stack<String> stack = new Stack<>();
+    for (String word : sentence.split(" ")) stack.push(word);
+    StringBuilder sb = new StringBuilder();
+    while (!stack.isEmpty()) {
+        sb.append(stack.pop());
+        if (!stack.isEmpty()) sb.append(" ");
+    }
+    return sb.toString();
+}
+
+public static void main(String[] args) {
+    System.out.println(reverseString("Hello"));        // olleH
+    System.out.println(reverseWords("I love Java"));   // Java love I
+}`
+    },
+    {
+      title:"Odd / Even Numbers",
+      color:"#a855f7",
+      desc:"Separate odd and even numbers using two stacks, or filter only odd/even from a stack.",
+      code:`import java.util.Stack;
+
+// ─── Separate Odd and Even numbers using Stacks ───
+public static void separateOddEven(int[] arr) {
+    Stack<Integer> oddStack  = new Stack<>();
+    Stack<Integer> evenStack = new Stack<>();
+    
+    for (int n : arr) {
+        if (n % 2 != 0) oddStack.push(n);
+        else             evenStack.push(n);
+    }
+    
+    System.out.print("Odd numbers:  ");
+    while (!oddStack.isEmpty()) System.out.print(oddStack.pop() + " ");
+    
+    System.out.print("\nEven numbers: ");
+    while (!evenStack.isEmpty()) System.out.print(evenStack.pop() + " ");
+}
+
+// ─── Keep only ODD numbers in a stack ───
+public static Stack<Integer> keepOnlyOdd(Stack<Integer> stack) {
+    Stack<Integer> result = new Stack<>();
+    while (!stack.isEmpty()) {
+        int val = stack.pop();
+        if (val % 2 != 0) result.push(val);
+    }
+    return result;
+}
+
+// ─── Keep only EVEN numbers in a stack ───
+public static Stack<Integer> keepOnlyEven(Stack<Integer> stack) {
+    Stack<Integer> result = new Stack<>();
+    while (!stack.isEmpty()) {
+        int val = stack.pop();
+        if (val % 2 == 0) result.push(val);
+    }
+    return result;
+}
+
+// ─── Sum of all elements in stack ───
+public static int sumStack(Stack<Integer> stack) {
+    int sum = 0;
+    Stack<Integer> temp = new Stack<>();
+    while (!stack.isEmpty()) {
+        int val = stack.pop();
+        sum += val;
+        temp.push(val);
+    }
+    // Restore original stack
+    while (!temp.isEmpty()) stack.push(temp.pop());
+    return sum;
+}
+
+public static void main(String[] args) {
+    separateOddEven(new int[]{1,2,3,4,5,6,7,8});
+    // Odd:  7 5 3 1
+    // Even: 8 6 4 2
+}`
+    },
+    {
+      title:"Bracket Checker",
+      color:"#22c55e",
+      desc:"For every opening bracket, push it. For every closing bracket, pop and verify it matches. If stack is empty at end, brackets are balanced.",
+      code:`import java.util.Stack;
+
+// ─── Balanced Brackets / Parentheses Checker ───
+public static boolean isBalanced(String expr) {
+    Stack<Character> stack = new Stack<>();
+    
+    for (char c : expr.toCharArray()) {
+        // Opening brackets — push
+        if (c == '(' || c == '[' || c == '{') {
+            stack.push(c);
+        }
+        // Closing brackets — pop and match
+        else if (c == ')' || c == ']' || c == '}') {
+            if (stack.isEmpty()) return false; // no matching opener
+            
+            char top = stack.pop();
+            if (c == ')' && top != '(') return false;
+            if (c == ']' && top != '[') return false;
+            if (c == '}' && top != '{') return false;
+        }
+        // Ignore all other characters
+    }
+    return stack.isEmpty(); // balanced only if nothing left
+}
+
+// ─── Extended: Also report the mismatch position ───
+public static String checkBrackets(String expr) {
+    Stack<int[]> stack = new Stack<>(); // [char, index]
+    
+    for (int i = 0; i < expr.length(); i++) {
+        char c = expr.charAt(i);
+        if (c=='(' || c=='[' || c=='{') {
+            stack.push(new int[]{c, i});
+        } else if (c==')' || c==']' || c=='}') {
+            if (stack.isEmpty())
+                return "Unmatched closing '" + c + "' at index " + i;
+            int[] top = stack.pop();
+            if ((c==')' && top[0]!='(') ||
+                (c==']' && top[0]!='[') ||
+                (c=='}' && top[0]!='{'))
+                return "Mismatch: '" + (char)top[0] + "' at " + top[1] +
+                       " and '" + c + "' at " + i;
+        }
+    }
+    if (!stack.isEmpty())
+        return "Unclosed '" + (char)stack.peek()[0] + "' at " + stack.peek()[1];
+    return "Balanced!";
+}
+
+public static void main(String[] args) {
+    System.out.println(isBalanced("({[]})"));      // true
+    System.out.println(isBalanced("([)]"));        // false
+    System.out.println(isBalanced("{[}"));         // false
+    System.out.println(checkBrackets("(a+b)*[c")); // Unclosed...
+}`
+    },
+    {
+      title:"Number System Conversion",
+      color:"#f59e0b",
+      desc:"Convert decimal to binary, octal, or hex by repeatedly dividing and saving remainders. Stack reverses them for correct order.",
+      code:`import java.util.Stack;
+
+// ─── Decimal to ANY base using Stack ───
+public static String decimalToBase(int n, int base) {
+    if (n == 0) return "0";
+    Stack<Integer> stack = new Stack<>();
+    String digits = "0123456789ABCDEF";  // for hex
+    
+    while (n > 0) {
+        stack.push(n % base);  // push remainder
+        n /= base;
+    }
+    
+    StringBuilder sb = new StringBuilder();
+    while (!stack.isEmpty()) {
+        sb.append(digits.charAt(stack.pop()));
+    }
+    return sb.toString();
+}
+
+// ─── Decimal to Binary ───
+public static String toBinary(int n) {
+    return decimalToBase(n, 2);
+}
+
+// ─── Decimal to Octal ───
+public static String toOctal(int n) {
+    return decimalToBase(n, 8);
+}
+
+// ─── Decimal to Hexadecimal ───
+public static String toHex(int n) {
+    return decimalToBase(n, 16);
+}
+
+// ─── Binary to Decimal ───
+public static int binaryToDecimal(String binary) {
+    int result = 0;
+    int power = 1;
+    for (int i = binary.length() - 1; i >= 0; i--) {
+        if (binary.charAt(i) == '1') result += power;
+        power *= 2;
+    }
+    return result;
+}
+
+public static void main(String[] args) {
+    System.out.println("25 in binary:  " + toBinary(25));   // 11001
+    System.out.println("25 in octal:   " + toOctal(25));    // 31
+    System.out.println("255 in hex:    " + toHex(255));     // FF
+    System.out.println("11001 to dec:  " + binaryToDecimal("11001")); // 25
+    
+    // Step by step for 25 -> binary:
+    // 25 / 2 = 12 rem 1  -> push 1
+    // 12 / 2 = 6  rem 0  -> push 0
+    //  6 / 2 = 3  rem 0  -> push 0
+    //  3 / 2 = 1  rem 1  -> push 1
+    //  1 / 2 = 0  rem 1  -> push 1
+    // Pop all: 1 1 0 0 1  = 11001
+}`
+    },
+    {
+      title:"Infix to Postfix",
+      color:"#ef4444",
+      desc:"Convert infix (A+B) to postfix (AB+) using operator precedence stack. Operands go directly to output. Operators wait in stack.",
+      code:`import java.util.Stack;
+
+// ─── Operator Precedence ───
+static int precedence(char op) {
+    if (op == '+' || op == '-') return 1;
+    if (op == '*' || op == '/') return 2;
+    if (op == '^')              return 3;
+    return 0;
+}
+
+static boolean isRightAssociative(char op) {
+    return op == '^';
+}
+
+// ─── Infix to Postfix Conversion ───
+public static String infixToPostfix(String expr) {
+    Stack<Character> stack  = new Stack<>();
+    StringBuilder    result = new StringBuilder();
+
+    for (int i = 0; i < expr.length(); i++) {
+        char c = expr.charAt(i);
+        if (c == ' ') continue;
+
+        // Operand (letter or digit) — goes directly to output
+        if (Character.isLetterOrDigit(c)) {
+            result.append(c);
+            result.append(' ');
+        }
+        // Left parenthesis — push to stack
+        else if (c == '(') {
+            stack.push(c);
+        }
+        // Right parenthesis — pop until matching '('
+        else if (c == ')') {
+            while (!stack.isEmpty() && stack.peek() != '(') {
+                result.append(stack.pop());
+                result.append(' ');
+            }
+            stack.pop(); // remove '('
+        }
+        // Operator
+        else {
+            while (!stack.isEmpty() &&
+                   stack.peek() != '(' &&
+                   (isRightAssociative(c)
+                       ? precedence(stack.peek()) > precedence(c)
+                       : precedence(stack.peek()) >= precedence(c))) {
+                result.append(stack.pop());
+                result.append(' ');
+            }
+            stack.push(c);
+        }
+    }
+    // Pop remaining operators
+    while (!stack.isEmpty()) {
+        result.append(stack.pop());
+        result.append(' ');
+    }
+    return result.toString().trim();
+}
+
+public static void main(String[] args) {
+    System.out.println(infixToPostfix("A+B*C"));       // A B C * +
+    System.out.println(infixToPostfix("(A+B)*C"));     // A B + C *
+    System.out.println(infixToPostfix("A+B*C-D/E"));   // A B C * + D E / -
+    System.out.println(infixToPostfix("A*(B+C)/D"));   // A B C + * D /
+}
+// ─── Algorithm trace for A+B*C ───
+// c='A' → output: A
+// c='+' → stack: [+]
+// c='B' → output: A B
+// c='*' → precedence(*) > precedence(+), stack: [+,*]
+// c='C' → output: A B C
+// end   → pop * then +: output: A B C * +`
+    },
+    {
+      title:"Postfix Evaluation",
+      color:"#06b6d4",
+      desc:"Evaluate a postfix expression. When you see a number, push it. When you see an operator, pop two numbers, apply, and push result.",
+      code:`import java.util.Stack;
+
+// ─── Evaluate Postfix Expression ───
+public static double evaluatePostfix(String expr) {
+    Stack<Double> stack = new Stack<>();
+    String[] tokens = expr.split("\\s+"); // split by spaces
+    
+    for (String token : tokens) {
+        // If it's a number, push it
+        if (token.matches("-?\\d+(\\.\\d+)?")) {
+            stack.push(Double.parseDouble(token));
+        }
+        // If it's an operator, pop two and compute
+        else {
+            if (stack.size() < 2) throw new RuntimeException("Invalid expression");
+            double b = stack.pop();  // second operand
+            double a = stack.pop();  // first operand
+            switch (token) {
+                case "+": stack.push(a + b); break;
+                case "-": stack.push(a - b); break;
+                case "*": stack.push(a * b); break;
+                case "/":
+                    if (b == 0) throw new ArithmeticException("Division by zero");
+                    stack.push(a / b); break;
+                case "^": stack.push(Math.pow(a, b)); break;
+                default: throw new RuntimeException("Unknown operator: " + token);
+            }
+        }
+    }
+    if (stack.size() != 1) throw new RuntimeException("Invalid expression");
+    return stack.pop();
+}
+
+public static void main(String[] args) {
+    // 3 4 + 2 * = (3+4)*2 = 14
+    System.out.println(evaluatePostfix("3 4 + 2 *"));   // 14.0
+    // 5 1 2 + 4 * + 3 - = 5+(1+2)*4-3 = 14
+    System.out.println(evaluatePostfix("5 1 2 + 4 * + 3 -")); // 14.0
+    // 2 3 ^ = 2^3 = 8
+    System.out.println(evaluatePostfix("2 3 ^"));       // 8.0
+}
+
+// ─── Trace: "3 4 + 2 *" ───
+// token=3: push 3      → stack: [3]
+// token=4: push 4      → stack: [3, 4]
+// token=+: pop 4,3     → 3+4=7, push 7  → stack: [7]
+// token=2: push 2      → stack: [7, 2]
+// token=*: pop 2,7     → 7*2=14, push 14 → stack: [14]
+// Result = 14`
+    },
+    {
+      title:"Infix Expression Evaluation",
+      color:"#f0883e",
+      desc:"Use TWO stacks (one for values, one for operators). Process operators respecting precedence.",
+      code:`import java.util.Stack;
+
+// ─── Evaluate Infix Expression Directly ───
+static int applyOp(char op, int b, int a) {
+    switch (op) {
+        case '+': return a + b;
+        case '-': return a - b;
+        case '*': return a * b;
+        case '/': return a / b;
+    }
+    return 0;
+}
+
+static int prec(char op) {
+    if (op == '+' || op == '-') return 1;
+    if (op == '*' || op == '/') return 2;
+    return 0;
+}
+
+public static int evaluateInfix(String expr) {
+    Stack<Integer>   values = new Stack<>();
+    Stack<Character> ops    = new Stack<>();
+    
+    for (int i = 0; i < expr.length(); i++) {
+        char c = expr.charAt(i);
+        if (c == ' ') continue;
+        
+        // Number (handle multi-digit)
+        if (Character.isDigit(c)) {
+            int num = 0;
+            while (i < expr.length() && Character.isDigit(expr.charAt(i))) {
+                num = num * 10 + (expr.charAt(i++) - '0');
+            }
+            i--;
+            values.push(num);
+        }
+        // Left parenthesis
+        else if (c == '(') {
+            ops.push(c);
+        }
+        // Right parenthesis — solve until matching '('
+        else if (c == ')') {
+            while (ops.peek() != '(') {
+                values.push(applyOp(ops.pop(), values.pop(), values.pop()));
+            }
+            ops.pop(); // remove '('
+        }
+        // Operator
+        else if (c=='+' || c=='-' || c=='*' || c=='/') {
+            while (!ops.isEmpty() && prec(ops.peek()) >= prec(c)) {
+                values.push(applyOp(ops.pop(), values.pop(), values.pop()));
+            }
+            ops.push(c);
+        }
+    }
+    while (!ops.isEmpty()) {
+        values.push(applyOp(ops.pop(), values.pop(), values.pop()));
+    }
+    return values.pop();
+}
+
+public static void main(String[] args) {
+    System.out.println(evaluateInfix("3 + 5"));         // 8
+    System.out.println(evaluateInfix("10 + 2 * 6"));    // 22
+    System.out.println(evaluateInfix("(2 + 3) * 4"));   // 20
+    System.out.println(evaluateInfix("100 * (2 + 12)")); // 1400
+}`
+    },
+  ];
+  return (
+    <div>
+      <H2>Stack Applications — Practical Implementations</H2>
+      <div style={{display:"flex",gap:"6px",flexWrap:"wrap",margin:"12px 0"}}>
+        {apps.map((a,i)=>(
+          <button key={i} onClick={()=>setApp(i)}
+            style={{padding:"7px 13px",borderRadius:"20px",border:`1px solid ${a.color}44`,
+              cursor:"pointer",fontWeight:500,fontSize:"12px",transition:"all 0.2s",
+              background:app===i?a.color+"33":"#21262d",
+              color:app===i?a.color:"#adbac7"}}>
+            {a.title}
+          </button>
+        ))}
+      </div>
+      <Box color={["blue","purple","green","yellow","red","cyan","yellow"][app]} title={`Application: ${apps[app].title}`}>
+        {apps[app].desc}
+      </Box>
+      <CB code={apps[app].code} />
+    </div>
+  );
+};
+
+/* ─── SECTION: QUEUE ─────────────────────────────────────── */
+const QueueContent = () => {
+  const [sub, setSub] = useState("concept");
+  const subs = [
+    {id:"concept",label:"🚶 Concept"},
+    {id:"array",label:"🔢 With Array"},
+    {id:"ll",label:"🔗 With LL"},
+    {id:"types",label:"🗂️ Types"},
+    {id:"examples",label:"💡 Examples"},
+  ];
+  return (
+    <div>
+      <SectionTitle icon="🚶">Queue — Complete Guide</SectionTitle>
+      <div style={{display:"flex",gap:"8px",flexWrap:"wrap",margin:"16px 0"}}>
+        {subs.map(s=>(
+          <button key={s.id} onClick={()=>setSub(s.id)}
+            style={{padding:"8px 16px",borderRadius:"20px",border:"none",cursor:"pointer",
+              fontWeight:600,fontSize:"13px",transition:"all 0.2s",
+              background:sub===s.id?"#3fb950":"#21262d",
+              color:sub===s.id?"#0d1117":"#adbac7"}}>
+            {s.label}
+          </button>
+        ))}
+      </div>
+      {sub==="concept" && <QueueConcept />}
+      {sub==="array" && <QueueArray />}
+      {sub==="ll" && <QueueLinkedList />}
+      {sub==="types" && <QueueTypes />}
+      {sub==="examples" && <QueueExamples />}
+    </div>
+  );
+};
+
+const QueueConcept = () => (
+  <div>
+    <H2>What is a Queue?</H2>
+    <P>A Queue is a <b style={{color:"#3fb950"}}>FIFO</b> (First In, First Out) data structure. The first element added is the first one removed — like a real queue of people waiting in line.</P>
+    <div style={{display:"flex",gap:"12px",flexWrap:"wrap",margin:"12px 0"}}>
+      <div style={{flex:"1 1 260px",background:"#161b22",borderRadius:"10px",padding:"16px",border:"1px solid #30363d"}}>
+        <div style={{color:"#3fb950",fontWeight:700,textAlign:"center",marginBottom:"12px"}}>Queue (FIFO)</div>
+        <div style={{display:"flex",alignItems:"center",gap:"4px"}}>
+          <div style={{color:"#ef4444",fontSize:"12px",fontWeight:700,writingMode:"vertical-rl",transform:"rotate(180deg)",padding:"8px 4px",background:"#2d1a1a",borderRadius:"6px 0 0 6px"}}>FRONT (dequeue)</div>
+          {[10,20,30,40].map((v,i)=>(
+            <div key={i} style={{flex:1,background:"#1f2937",border:"1px solid #30363d",
+              borderRadius:"4px",padding:"12px 6px",textAlign:"center",
+              color:"#e2e8f0",fontWeight:700,fontFamily:"monospace"}}>{v}</div>
+          ))}
+          <div style={{color:"#3fb950",fontSize:"12px",fontWeight:700,writingMode:"vertical-rl",padding:"8px 4px",background:"#1a2d1a",borderRadius:"0 6px 6px 0"}}>REAR (enqueue)</div>
+        </div>
+        <div style={{display:"flex",justifyContent:"space-between",marginTop:"8px",fontSize:"12px",color:"#6e7681"}}>
+          <span>← dequeue (remove)</span><span>enqueue (add) →</span>
+        </div>
+      </div>
+      <div style={{flex:"2 1 280px"}}>
+        <Box color="green" title="Core Operations">
+          <b>enqueue(x)</b> — Add element to REAR<br/>
+          <b>dequeue()</b> — Remove from FRONT<br/>
+          <b>peek()/front()</b> — View front without removing<br/>
+          <b>isEmpty()</b> — Check if queue is empty<br/>
+          <b>size()</b> — Number of elements
+        </Box>
+        <Box color="blue" title="All operations are O(1) (with LL impl)">
+          With linked list: enqueue and dequeue are both O(1). With array: depends on implementation.
+        </Box>
+        <Box color="yellow" title="Real-World Examples">
+          🖨️ Printer queue &nbsp;|&nbsp; 🎟️ Ticket counter<br/>
+          🌐 Web server request handling<br/>
+          🚌 Bus stop queue &nbsp;|&nbsp; CPU task scheduling<br/>
+          📦 Order processing system
+        </Box>
+      </div>
+    </div>
+    <H3>Why Use a Queue?</H3>
+    <Ul>
+      <Li>CPU and disk scheduling (process management)</Li>
+      <Li>BFS (Breadth-First Search) in graphs/trees</Li>
+      <Li>Web server request queues</Li>
+      <Li>Print spoolers and job queues</Li>
+      <Li>Asynchronous data transfer (IO buffers, pipes)</Li>
+      <Li>Simulation systems (bank lines, traffic)</Li>
+      <Li>Message queues (Kafka, RabbitMQ)</Li>
+    </Ul>
+    <H3>Stack vs Queue</H3>
+    <CompareTable
+      headers={["Feature","Stack","Queue"]}
+      rows={[
+        ["Principle","LIFO — Last In First Out","FIFO — First In First Out"],
+        ["Add at","Top","Rear"],
+        ["Remove from","Top","Front"],
+        ["Operations","push / pop","enqueue / dequeue"],
+        ["Use case","Undo, recursion, expression eval","Scheduling, BFS, buffers"],
+      ]}
+    />
+  </div>
+);
+
+const QueueArray = () => (
+  <div>
+    <H2>Queue Implementation Using Array (Circular)</H2>
+    <Box color="yellow" title="Why Circular Array?">
+      A simple array queue wastes space — front moves right but that space is lost. A <b>circular array</b> wraps around using modulo: <code style={{background:"#2d2a1a",padding:"2px 6px",borderRadius:"4px"}}>index = (index + 1) % capacity</code>
+    </Box>
+    <CB code={`// ─── Queue Using Circular Array ───
+class QueueArray {
+    private int[] arr;
+    private int front;    // index of front element
+    private int rear;     // index of rear element
+    private int size;     // current number of elements
+    private int capacity;
+
+    QueueArray(int capacity) {
+        this.capacity = capacity;
+        arr = new int[capacity];
+        front = 0;
+        rear = -1;
+        size = 0;
+    }
+
+    // ── Enqueue (add to rear)  O(1)
+    void enqueue(int data) {
+        if (size == capacity) {
+            System.out.println("Queue is Full! Cannot enqueue " + data);
+            return;
+        }
+        rear = (rear + 1) % capacity;   // wrap around!
+        arr[rear] = data;
+        size++;
+    }
+
+    // ── Dequeue (remove from front)  O(1)
+    int dequeue() {
+        if (isEmpty()) {
+            System.out.println("Queue is Empty!");
+            return -1;
+        }
+        int val = arr[front];
+        front = (front + 1) % capacity; // wrap around!
+        size--;
+        return val;
+    }
+
+    // ── Peek (front element)  O(1)
+    int peek() {
+        if (isEmpty()) return -1;
+        return arr[front];
+    }
+
+    // ── Rear element  O(1)
+    int rearElement() {
+        if (isEmpty()) return -1;
+        return arr[rear];
+    }
+
+    boolean isEmpty()  { return size == 0; }
+    boolean isFull()   { return size == capacity; }
+    int size()         { return size; }
+
+    // ── Print queue
+    void print() {
+        if (isEmpty()) { System.out.println("Queue: []"); return; }
+        System.out.print("FRONT -> ");
+        for (int i = 0; i < size; i++) {
+            System.out.print("[" + arr[(front + i) % capacity] + "] ");
+        }
+        System.out.println("<- REAR");
+    }
+}
+
+// ─── Dynamic Queue (auto-resize) ───
+class DynamicQueue {
+    private int[] arr;
+    private int front, rear, size, capacity;
+
+    DynamicQueue(int cap) {
+        capacity = cap; arr = new int[cap];
+        front = 0; rear = -1; size = 0;
+    }
+
+    void enqueue(int data) {
+        if (size == capacity) resize();
+        rear = (rear + 1) % capacity;
+        arr[rear] = data;
+        size++;
+    }
+
+    private void resize() {
+        int newCap = capacity * 2;
+        int[] newArr = new int[newCap];
+        for (int i = 0; i < size; i++)
+            newArr[i] = arr[(front + i) % capacity];
+        arr = newArr; front = 0; rear = size - 1; capacity = newCap;
+    }
+
+    int dequeue() {
+        if (size == 0) return -1;
+        int val = arr[front];
+        front = (front + 1) % capacity;
+        size--;
+        return val;
+    }
+
+    int peek()    { return size == 0 ? -1 : arr[front]; }
+    boolean isEmpty() { return size == 0; }
+    int size()    { return size; }
+}
+
+// ─── Usage ───
+public static void main(String[] args) {
+    QueueArray q = new QueueArray(5);
+    q.enqueue(10); q.enqueue(20); q.enqueue(30);
+    q.print();    // FRONT -> [10] [20] [30] <- REAR
+    q.dequeue();
+    q.print();    // FRONT -> [20] [30] <- REAR
+    q.enqueue(40); q.enqueue(50); q.enqueue(60);
+    q.print();    // FRONT -> [20] [30] [40] [50] [60] <- REAR
+}`} />
+  </div>
+);
+
+const QueueLinkedList = () => (
+  <div>
+    <H2>Queue Implementation Using Linked List</H2>
+    <Box color="green" title="Advantage">
+      No fixed size. Enqueue at rear (tail), dequeue at front (head). Both are O(1) with tail pointer. No wasted space, no resizing needed.
+    </Box>
+    <CB code={`// ─── Queue Using Linked List ───
+class QNode {
+    int data;
+    QNode next;
+    QNode(int data) { this.data = data; }
+}
+
+class QueueLL {
+    private QNode front;   // remove from here
+    private QNode rear;    // add to here
+    private int size;
+
+    // ── Enqueue (add at rear)  O(1)
+    void enqueue(int data) {
+        QNode node = new QNode(data);
+        if (rear == null) {
+            front = rear = node;
+            size++;
+            return;
+        }
+        rear.next = node;
+        rear = node;
+        size++;
+    }
+
+    // ── Dequeue (remove from front)  O(1)
+    int dequeue() {
+        if (isEmpty()) throw new RuntimeException("Queue is Empty");
+        int val = front.data;
+        front = front.next;
+        if (front == null) rear = null; // queue became empty
+        size--;
+        return val;
+    }
+
+    // ── Peek / front element  O(1)
+    int peek() {
+        if (isEmpty()) throw new RuntimeException("Queue is Empty");
+        return front.data;
+    }
+
+    int rearElement() {
+        if (isEmpty()) throw new RuntimeException("Queue is Empty");
+        return rear.data;
+    }
+
+    boolean isEmpty() { return front == null; }
+    int size()        { return size; }
+
+    // ── Print queue
+    void print() {
+        QNode curr = front;
+        System.out.print("FRONT -> ");
+        while (curr != null) {
+            System.out.print("[" + curr.data + "]");
+            if (curr.next != null) System.out.print(" -> ");
+            curr = curr.next;
+        }
+        System.out.println(" <- REAR");
+    }
+}
+
+// ─── Deque (Double-Ended Queue) using Doubly LL ───
+class Deque {
+    private DNode front, rear;
+    private int size;
+
+    // Add to front  O(1)
+    void addFront(int data) {
+        DNode node = new DNode(data);
+        if (front == null) { front = rear = node; size++; return; }
+        node.next = front;
+        front.prev = node;
+        front = node;
+        size++;
+    }
+
+    // Add to rear  O(1)
+    void addRear(int data) {
+        DNode node = new DNode(data);
+        if (rear == null) { front = rear = node; size++; return; }
+        rear.next = node;
+        node.prev = rear;
+        rear = node;
+        size++;
+    }
+
+    // Remove from front  O(1)
+    int removeFront() {
+        if (front == null) throw new RuntimeException("Empty");
+        int val = front.data;
+        front = front.next;
+        if (front != null) front.prev = null;
+        else rear = null;
+        size--;
+        return val;
+    }
+
+    // Remove from rear  O(1)
+    int removeRear() {
+        if (rear == null) throw new RuntimeException("Empty");
+        int val = rear.data;
+        rear = rear.prev;
+        if (rear != null) rear.next = null;
+        else front = null;
+        size--;
+        return val;
+    }
+
+    int peekFront() { return front != null ? front.data : -1; }
+    int peekRear()  { return rear != null ? rear.data : -1; }
+    boolean isEmpty() { return front == null; }
+    int size()        { return size; }
+}`} />
+  </div>
+);
+
+const QueueTypes = () => (
+  <div>
+    <H2>Types of Queues</H2>
+    <CompareTable
+      headers={["Type","Description","Use Case"]}
+      rows={[
+        ["Simple Queue","FIFO, add at rear, remove at front","Basic scheduling"],
+        ["Circular Queue","Rear wraps to front, no wasted space","CPU scheduling"],
+        ["Deque (Double-Ended)","Add/remove from both ends","Sliding window problems"],
+        ["Priority Queue","Highest priority served first","Dijkstra, task scheduling"],
+        ["Blocking Queue","Waits if empty/full (thread-safe)","Producer-consumer pattern"],
+      ]}
+    />
+    <H3>Priority Queue</H3>
+    <CB code={`import java.util.PriorityQueue;
+import java.util.Collections;
+
+// ─── Min Priority Queue (default) ───
+PriorityQueue<Integer> minPQ = new PriorityQueue<>();
+minPQ.add(30); minPQ.add(10); minPQ.add(20);
+System.out.println(minPQ.poll()); // 10 (smallest first)
+
+// ─── Max Priority Queue ───
+PriorityQueue<Integer> maxPQ = new PriorityQueue<>(Collections.reverseOrder());
+maxPQ.add(30); maxPQ.add(10); maxPQ.add(20);
+System.out.println(maxPQ.poll()); // 30 (largest first)
+
+// ─── Custom Priority Queue ───
+PriorityQueue<int[]> taskQueue = new PriorityQueue<>(
+    (a, b) -> b[1] - a[1] // higher priority number = served first
+);
+taskQueue.add(new int[]{1, 3}); // task 1, priority 3
+taskQueue.add(new int[]{2, 5}); // task 2, priority 5
+taskQueue.add(new int[]{3, 1}); // task 3, priority 1
+int[] next = taskQueue.poll();
+System.out.println("Next task: " + next[0]); // task 2 (priority 5)`} />
+  </div>
+);
+
+const QueueExamples = () => {
+  const [ex, setEx] = useState(0);
+  const examples = [
+    {
+      title:"Remove All Even Numbers",
+      desc:"Dequeue each element, re-enqueue only if it's odd. Traverse exactly n elements.",
+      code:`import java.util.LinkedList;
+import java.util.Queue;
+
+// ─── Remove all EVEN numbers from Queue ───
+public static void removeEven(Queue<Integer> q) {
+    int n = q.size();
+    for (int i = 0; i < n; i++) {
+        int val = q.poll();      // dequeue
+        if (val % 2 != 0) {     // keep only ODD
+            q.add(val);          // re-enqueue
+        }
+        // even values are just dropped
+    }
+}
+
+// ─── Remove all ODD numbers from Queue ───
+public static void removeOdd(Queue<Integer> q) {
+    int n = q.size();
+    for (int i = 0; i < n; i++) {
+        int val = q.poll();
+        if (val % 2 == 0) {     // keep only EVEN
+            q.add(val);
+        }
+    }
+}
+
+public static void main(String[] args) {
+    Queue<Integer> q = new LinkedList<>();
+    for (int i = 1; i <= 8; i++) q.add(i * 10);
+    System.out.println("Before: " + q);       // [10,20,30,40,50,60,70,80]
+    removeOdd(q);
+    System.out.println("Even only: " + q);    // [10,20,30,40,50,60,70,80]
+
+    Queue<Integer> q2 = new LinkedList<>();
+    for (int n : new int[]{1,2,3,4,5,6,7,8}) q2.add(n);
+    removeEven(q2);
+    System.out.println("Odd only: " + q2);    // [1,3,5,7]
+}`
+    },
+    {
+      title:"Reverse a Queue",
+      desc:"Push all elements onto a stack, then dequeue from stack back into queue. Stack reverses the order.",
+      code:`import java.util.*;
+
+// ─── Reverse Queue using Stack ───
+public static void reverseQueue(Queue<Integer> q) {
+    Stack<Integer> stack = new Stack<>();
+    
+    // Step 1: Move all elements to stack
+    while (!q.isEmpty()) {
+        stack.push(q.poll());
+    }
+    
+    // Step 2: Move back from stack to queue (reversed!)
+    while (!stack.isEmpty()) {
+        q.add(stack.pop());
+    }
+}
+
+// ─── Reverse first K elements of Queue ───
+public static void reverseFirstK(Queue<Integer> q, int k) {
+    if (q.isEmpty() || k > q.size()) return;
+    Stack<Integer> stack = new Stack<>();
+    
+    // Push first k elements to stack
+    for (int i = 0; i < k; i++) stack.push(q.poll());
+    
+    // Put them back (reversed)
+    while (!stack.isEmpty()) q.add(stack.pop());
+    
+    // Move remaining (n-k) elements to back
+    int remaining = q.size() - k;
+    for (int i = 0; i < remaining; i++) q.add(q.poll());
+}
+
+public static void main(String[] args) {
+    Queue<Integer> q = new LinkedList<>(Arrays.asList(1,2,3,4,5));
+    System.out.println("Before: " + q); // [1, 2, 3, 4, 5]
+    reverseQueue(q);
+    System.out.println("After:  " + q); // [5, 4, 3, 2, 1]
+
+    Queue<Integer> q2 = new LinkedList<>(Arrays.asList(1,2,3,4,5));
+    reverseFirstK(q2, 3);
+    System.out.println("Rev first 3: " + q2); // [3, 2, 1, 4, 5]
+}`
+    },
+    {
+      title:"Find Max / Min in Queue",
+      desc:"Traverse all elements by dequeuing and re-enqueuing, tracking max/min along the way.",
+      code:`import java.util.*;
+
+// ─── Find Maximum in Queue (non-destructive) ───
+public static int findMax(Queue<Integer> q) {
+    if (q.isEmpty()) throw new RuntimeException("Empty queue");
+    int max = Integer.MIN_VALUE;
+    int n = q.size();
+    
+    for (int i = 0; i < n; i++) {
+        int val = q.poll();
+        max = Math.max(max, val);
+        q.add(val); // restore
+    }
+    return max;
+}
+
+// ─── Find Minimum in Queue ───
+public static int findMin(Queue<Integer> q) {
+    if (q.isEmpty()) throw new RuntimeException("Empty queue");
+    int min = Integer.MAX_VALUE;
+    int n = q.size();
+    
+    for (int i = 0; i < n; i++) {
+        int val = q.poll();
+        min = Math.min(min, val);
+        q.add(val);
+    }
+    return min;
+}
+
+// ─── Sort a Queue using another Queue (Selection Sort) ───
+public static void sortQueue(Queue<Integer> q) {
+    int n = q.size();
+    for (int i = 0; i < n; i++) {
+        // Find minimum in remaining queue
+        int min = Integer.MAX_VALUE;
+        for (int j = 0; j < n - i; j++) {
+            int val = q.poll();
+            min = Math.min(min, val);
+            q.add(val);
+        }
+        // Remove min from queue and put at back
+        for (int j = 0; j < n - i; j++) {
+            int val = q.poll();
+            if (val != min) q.add(val);
+            else min = Integer.MAX_VALUE; // remove only once
+        }
+        q.add(min); // add min to its sorted position
+    }
+}
+
+public static void main(String[] args) {
+    Queue<Integer> q = new LinkedList<>(Arrays.asList(5,1,8,2,9,3));
+    System.out.println("Max: " + findMax(q));  // 9
+    System.out.println("Min: " + findMin(q));  // 1
+    sortQueue(q);
+    System.out.println("Sorted: " + q);        // [1, 2, 3, 5, 8, 9]
+}`
+    },
+    {
+      title:"Generate Binary Numbers",
+      desc:"Use a queue to generate binary numbers 1 to n. Append '0' and '1' to each number and enqueue.",
+      code:`import java.util.*;
+
+// ─── Generate binary numbers from 1 to N using Queue ───
+public static List<String> generateBinary(int n) {
+    List<String> result = new ArrayList<>();
+    Queue<String> q = new LinkedList<>();
+    
+    q.add("1"); // start with "1"
+    
+    for (int i = 0; i < n; i++) {
+        String front = q.poll();
+        result.add(front);
+        
+        // Append 0 and 1 to generate next two numbers
+        q.add(front + "0");
+        q.add(front + "1");
+    }
+    return result;
+}
+
+public static void main(String[] args) {
+    System.out.println(generateBinary(10));
+    // [1, 10, 11, 100, 101, 110, 111, 1000, 1001, 1010]
+    //  1   2   3    4    5    6    7     8     9    10
+}
+
+// How it works:
+// Start: q = ["1"]
+// Step1: dequeue "1", enqueue "10" and "11"   → result=[1]
+// Step2: dequeue "10", enqueue "100" and "101" → result=[1,10]
+// Step3: dequeue "11", enqueue "110" and "111" → result=[1,10,11]
+// ...and so on`
+    },
+    {
+      title:"Queue using Two Stacks",
+      desc:"Implement a queue using only two stacks. This is a classic interview problem. Amortized O(1) enqueue/dequeue.",
+      code:`import java.util.Stack;
+
+// ─── Queue Using Two Stacks ───
+class QueueWithTwoStacks {
+    private Stack<Integer> inbox  = new Stack<>(); // for enqueue
+    private Stack<Integer> outbox = new Stack<>(); // for dequeue
+
+    // ── Enqueue: always push to inbox  O(1)
+    void enqueue(int data) {
+        inbox.push(data);
+    }
+
+    // ── Dequeue: pop from outbox; if empty, refill from inbox  O(1) amortized
+    int dequeue() {
+        if (outbox.isEmpty()) {
+            if (inbox.isEmpty()) throw new RuntimeException("Queue is empty");
+            // Transfer all from inbox to outbox (reverses order = FIFO)
+            while (!inbox.isEmpty()) {
+                outbox.push(inbox.pop());
+            }
+        }
+        return outbox.pop();
+    }
+
+    int peek() {
+        if (outbox.isEmpty()) {
+            while (!inbox.isEmpty()) outbox.push(inbox.pop());
+        }
+        if (outbox.isEmpty()) throw new RuntimeException("Empty");
+        return outbox.peek();
+    }
+
+    boolean isEmpty() { return inbox.isEmpty() && outbox.isEmpty(); }
+    int size()        { return inbox.size() + outbox.size(); }
+}
+
+// ─── Stack Using Two Queues ───
+class StackWithTwoQueues {
+    private Queue<Integer> q1 = new LinkedList<>();
+    private Queue<Integer> q2 = new LinkedList<>();
+
+    void push(int data) {
+        q2.add(data);                      // add to q2
+        while (!q1.isEmpty()) q2.add(q1.poll()); // move q1 to q2
+        Queue<Integer> temp = q1; q1 = q2; q2 = temp; // swap
+    }
+
+    int pop()  { if (q1.isEmpty()) throw new RuntimeException(); return q1.poll(); }
+    int peek() { if (q1.isEmpty()) throw new RuntimeException(); return q1.peek(); }
+    boolean isEmpty() { return q1.isEmpty(); }
+}
+
+public static void main(String[] args) {
+    QueueWithTwoStacks q = new QueueWithTwoStacks();
+    q.enqueue(1); q.enqueue(2); q.enqueue(3);
+    System.out.println(q.dequeue()); // 1 (FIFO!)
+    System.out.println(q.dequeue()); // 2
+    q.enqueue(4);
+    System.out.println(q.dequeue()); // 3
+    System.out.println(q.dequeue()); // 4
+}`
+    },
+    {
+      title:"BFS using Queue",
+      desc:"Breadth-First Search (BFS) traverses a graph/tree level by level. Queue is essential for BFS.",
+      code:`import java.util.*;
+
+// ─── BFS on a Graph using Queue ───
+class Graph {
+    private int V;                    // number of vertices
+    private List<List<Integer>> adj;  // adjacency list
+
+    Graph(int v) {
+        V = v;
+        adj = new ArrayList<>();
+        for (int i = 0; i < v; i++) adj.add(new ArrayList<>());
+    }
+
+    void addEdge(int u, int v) {
+        adj.get(u).add(v);
+        adj.get(v).add(u); // undirected
+    }
+
+    // ── BFS from a given source vertex
+    void bfs(int start) {
+        boolean[] visited = new boolean[V];
+        Queue<Integer> queue = new LinkedList<>();
+
+        visited[start] = true;
+        queue.add(start);
+
+        System.out.print("BFS order: ");
+        while (!queue.isEmpty()) {
+            int node = queue.poll();
+            System.out.print(node + " ");
+
+            // Add all unvisited neighbors
+            for (int neighbor : adj.get(node)) {
+                if (!visited[neighbor]) {
+                    visited[neighbor] = true;
+                    queue.add(neighbor);
+                }
+            }
+        }
+        System.out.println();
+    }
+
+    // ── Level Order Traversal of Binary Tree ───
+    void levelOrder(TreeNode root) {
+        if (root == null) return;
+        Queue<TreeNode> q = new LinkedList<>();
+        q.add(root);
+
+        while (!q.isEmpty()) {
+            int levelSize = q.size(); // all nodes at current level
+            for (int i = 0; i < levelSize; i++) {
+                TreeNode node = q.poll();
+                System.out.print(node.val + " ");
+                if (node.left  != null) q.add(node.left);
+                if (node.right != null) q.add(node.right);
+            }
+            System.out.println(); // newline after each level
+        }
+    }
+}
+
+class TreeNode { int val; TreeNode left, right; TreeNode(int v){val=v;} }
+
+public static void main(String[] args) {
+    Graph g = new Graph(6);
+    g.addEdge(0, 1); g.addEdge(0, 2);
+    g.addEdge(1, 3); g.addEdge(1, 4);
+    g.addEdge(2, 5);
+    g.bfs(0); // BFS order: 0 1 2 3 4 5
+}`
+    },
+  ];
+  return (
+    <div>
+      <H2>Queue — Practical Examples</H2>
+      <div style={{display:"flex",gap:"6px",flexWrap:"wrap",margin:"12px 0"}}>
+        {examples.map((e,i)=>(
+          <button key={i} onClick={()=>setEx(i)}
+            style={{padding:"7px 13px",borderRadius:"20px",border:"none",cursor:"pointer",
+              fontWeight:500,fontSize:"12px",transition:"all 0.2s",
+              background:ex===i?"#3fb950":"#21262d",
+              color:ex===i?"#0d1117":"#adbac7"}}>
+            {i+1}. {e.title}
+          </button>
+        ))}
+      </div>
+      <Box color="green" title={`Example ${ex+1}: ${examples[ex].title}`}>
+        {examples[ex].desc}
+      </Box>
+      <CB code={examples[ex].code} />
+    </div>
+  );
+};
+
+/* ─── MAIN APP ───────────────────────────────────────────── */
+function DSGuide() {
+  const [tab, setTab] = useState("arrays");
+
+  const tabs = [
+    {id:"arrays", label:"📦 Arrays",       color:"#58a6ff"},
+    {id:"ll",     label:"🔗 Linked Lists",  color:"#a78bfa"},
+    {id:"stack",  label:"📚 Stack",         color:"#f0883e"},
+    {id:"queue",  label:"🚶 Queue",         color:"#3fb950"},
+  ];
+
+  return (
+    <div style={{background:"#010409",minHeight:"100vh",fontFamily:"'Segoe UI',system-ui,sans-serif"}}>
+      {/* Header */}
+      <div style={{background:"#0d1117",borderBottom:"1px solid #21262d",padding:"0 20px"}}>
+        <div style={{maxWidth:"1100px",margin:"0 auto"}}>
+          <div style={{padding:"16px 0 0",display:"flex",alignItems:"center",gap:"12px"}}>
+            <div style={{fontSize:"22px",fontWeight:800,color:"#fff",
+              fontFamily:"'Fira Code','Consolas',monospace"}}>
+              <span style={{color:"#58a6ff"}}>DS</span>
+              <span style={{color:"#6e7681"}}>::</span>
+              <span style={{color:"#3fb950"}}>Guide</span>
+            </div>
+            <div style={{fontSize:"12px",color:"#6e7681",background:"#161b22",
+              border:"1px solid #30363d",borderRadius:"20px",padding:"3px 10px"}}>
+              Java Edition
+            </div>
+          </div>
+          <div style={{display:"flex",gap:"0",marginTop:"12px"}}>
+            {tabs.map(t=>(
+              <button key={t.id} onClick={()=>setTab(t.id)}
+                style={{padding:"10px 20px",border:"none",cursor:"pointer",fontWeight:600,
+                  fontSize:"14px",transition:"all 0.2s",background:"transparent",
+                  color: tab===t.id ? t.color : "#6e7681",
+                  borderBottom: tab===t.id ? `2px solid ${t.color}` : "2px solid transparent",
+                  marginBottom:"-1px"}}>
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div style={{maxWidth:"1100px",margin:"0 auto",padding:"24px 20px",minHeight:"calc(100vh - 100px)"}}>
+        {tab==="arrays" && <ArraysContent />}
+        {tab==="ll"     && <LLContent />}
+        {tab==="stack"  && <StackContent />}
+        {tab==="queue"  && <QueueContent />}
+      </div>
+    </div>
+  );
+}
+
+    // Main Wrapper Component
+    function App() {
+      const [subject, setSubject] = useState('ds');
+
+      return (
+        <div id="app-container">
+          <div className="sidebar">
+            <h1>&#128218; Study Hub</h1>
+            
+            <div className="sidebar-section">My Subjects</div>
+            
+            <button 
+                className={"subject-btn " + (subject === 'ds' ? 'active' : '')} 
+                onClick={() => setSubject('ds')}
+            >
+                <span>Data Structures</span>
+            </button>
+            
+            <button className="subject-btn" disabled>
+                <span>Algorithms</span>
+                <span className="coming-soon">Soon</span>
+            </button>
+            
+            <button className="subject-btn" disabled>
+                <span>Databases</span>
+                <span className="coming-soon">Soon</span>
+            </button>
+            
+            <button className="subject-btn" disabled>
+                <span>Operating Systems</span>
+                <span className="coming-soon">Soon</span>
+            </button>
+            
+            <button className="subject-btn" disabled>
+                <span>Networking</span>
+                <span className="coming-soon">Soon</span>
+            </button>
+          </div>
+          
+          <div className="main-content">
+             {subject === 'ds' && <DSGuide />}
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
