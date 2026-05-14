@@ -1145,6 +1145,15 @@ function renderPlan() {
           ${plan.id === 'finals' ? `<button class="tab-btn ${tab === 'exams' ? 'active' : ''}" data-action="set-plan-tab" data-tab="exams" type="button">${isAr ? "جدول الامتحانات" : "Exam Schedule"}</button>` : ''}
         </div>
       </div>
+      <div class="tabs" style="margin-top:12px">
+        ${state.plans.map(p => `
+          <div class="chip ${p.id === plan.id ? "accent" : ""}" data-action="set-active-plan" data-id="${p.id}" style="cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+            ${esc(loc(p.name))}
+            ${p.id !== 'finals' ? `<span data-action="delete-plan" data-id="${p.id}" style="color:var(--red); font-weight:bold; padding: 2px 4px;">×</span>` : ''}
+          </div>
+        `).join("")}
+        <button class="secondary-btn" data-action="add-custom-plan" style="min-height:26px; padding:3px 8px; font-size:12px">+ ${isAr ? "خطة مخصصة" : "Custom Plan"}</button>
+      </div>
     </section>
 
     ${tab === 'exams' ? `
