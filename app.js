@@ -938,6 +938,7 @@ function formatDate(date) {
 }
 
 function daysLeft(date) {
+  if (!date) return 0;
   const localToday = new Date();
   localToday.setHours(0, 0, 0, 0);
   const target = new Date(`${date}T00:00:00`);
@@ -945,6 +946,7 @@ function daysLeft(date) {
 }
 
 function subjectGrade(subject) {
+  if (!subject || !subject.gradeItems) return { earned: 0, total: 0, percent: 0 };
   const earned = subject.gradeItems.reduce((sum, item) => sum + Number(item.earned || 0), 0);
   const total = subject.gradeItems.reduce((sum, item) => sum + Number(item.total || 0), 0);
   const percent = total ? Math.round((earned / total) * 100) : 0;
@@ -1063,6 +1065,7 @@ function renderDashboard() {
   const planDays = activePlan().days || [];
   const day = planDays.find(item => item.id === todayId) || planDays.find(item => item.tasks.some(task => !task.done)) || planDays[0];
   const grade = subjectGrade(exam);
+  const isAr = lang() === "ar";
 
   return `
     <section class="panel hero">
@@ -1071,10 +1074,10 @@ function renderDashboard() {
           <h2>${esc(tr("titles.dashboard"))}</h2>
           <p class="muted">${esc(tr("copy.dashboardLead"))}</p>
         </div>
-        <span class="chip accent">${esc(formatDate(exam.exam.date))}</span>
+        ${exam ? `<span class="chip accent">${esc(formatDate(exam.exam.date))}</span>` : ''}
       </div>
       <div class="grid cols-4">
-        ${renderMetric(daysLeft(exam.exam.date), `${tr("labels.daysLeft")} - ${loc(exam.name)}`)}
+        ${renderMetric(exam ? daysLeft(exam.exam.date) : "0", exam ? `${tr("labels.daysLeft")} - ${loc(exam.name)}` : tr("labels.daysLeft"))}
         ${renderMetric(cgpa.cumulative.toFixed(3), tr("labels.predictedCgpa"))}
         ${renderMetric(`${taskCompletion(allTasks)}%`, tr("labels.completion"))}
         ${renderMetric(cvCount, tr("labels.cvItems"))}
@@ -1083,17 +1086,24 @@ function renderDashboard() {
 
     <section class="grid cols-2" style="margin-top:14px">
       <article class="panel">
-        <div class="section-head">
-          <div>
-            <h2>${esc(tr("labels.nextExam"))}</h2>
-            <p class="muted">${esc(formatDate(exam.exam.date))} · ${esc(loc(exam.exam.time))}</p>
+        ${exam ? `
+          <div class="section-head">
+            <div>
+              <h2>${esc(tr("labels.nextExam"))}</h2>
+              <p class="muted">${esc(formatDate(exam.exam.date))} · ${esc(loc(exam.exam.time))}</p>
+            </div>
+            <span class="chip indigo">${esc(tr("labels.target"))}: ${esc(exam.targetGrade)}</span>
           </div>
-          <span class="chip indigo">${esc(tr("labels.target"))}: ${esc(exam.targetGrade)}</span>
-        </div>
-        <h3>${esc(loc(exam.name))}</h3>
-        <p class="muted">${esc(loc(exam.strategy))}</p>
-        <div class="progress" style="--value:${grade.percent}%"><span></span></div>
-        <p class="small muted" style="margin-top:8px">${esc(tr("labels.currentGrade"))}: ${grade.earned}/${grade.total} (${grade.percent}%)</p>
+          <h3>${esc(loc(exam.name))}</h3>
+          <p class="muted">${esc(loc(exam.strategy))}</p>
+          <div class="progress" style="--value:${grade.percent}%"><span></span></div>
+          <p class="small muted" style="margin-top:8px">${esc(tr("labels.currentGrade"))}: ${grade.earned}/${grade.total} (${grade.percent}%)</p>
+        ` : `
+          <div style="text-align:center; padding: 40px;">
+            <h3>${isAr ? "لا توجد امتحانات قادمة" : "No upcoming exams"}</h3>
+            <p class="muted">${isAr ? "أضف مواعيد الامتحانات في صفحة المواد." : "Add exam dates in the subjects page."}</p>
+          </div>
+        `}
       </article>
 
       <article class="panel">
