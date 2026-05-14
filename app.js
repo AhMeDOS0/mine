@@ -1135,9 +1135,11 @@ function renderPlan() {
     </div>
 
     <div class="tabs" style="margin-bottom: 20px; display: flex; gap: 10px;">
-      <button class="tab-btn ${tab === 'exams' ? 'active' : ''}" data-action="set-plan-tab" data-tab="exams" style="flex: 1; padding: 12px; border-radius: var(--radius); font-weight: 600; cursor: pointer; border: none; background: ${tab === 'exams' ? 'var(--accent)' : 'var(--surface)'}; color: ${tab === 'exams' ? 'white' : 'var(--ink)'};">
-        ${isAr ? "مواعيد الامتحانات" : "Exam Schedule"}
-      </button>
+      ${plan.id === 'finals' ? `
+        <button class="tab-btn ${tab === 'exams' ? 'active' : ''}" data-action="set-plan-tab" data-tab="exams" style="flex: 1; padding: 12px; border-radius: var(--radius); font-weight: 600; cursor: pointer; border: none; background: ${tab === 'exams' ? 'var(--accent)' : 'var(--surface)'}; color: ${tab === 'exams' ? 'white' : 'var(--ink)'};">
+          ${isAr ? "مواعيد الامتحانات" : "Exam Schedule"}
+        </button>
+      ` : ''}
       <button class="tab-btn ${tab === 'roadmap' ? 'active' : ''}" data-action="set-plan-tab" data-tab="roadmap" style="flex: 1; padding: 12px; border-radius: var(--radius); font-weight: 600; cursor: pointer; border: none; background: ${tab === 'roadmap' ? 'var(--accent)' : 'var(--surface)'}; color: ${tab === 'roadmap' ? 'white' : 'var(--ink)'};">
         ${isAr ? "الخطة اليومية" : "Daily Roadmap"}
       </button>
@@ -2333,6 +2335,7 @@ document.addEventListener("click", async event => {
 
   if (action === "select-plan") {
     state.activePlanId = actionEl.dataset.id;
+    if (state.activePlanId !== 'finals') state.planTab = 'roadmap';
     render();
   }
 
