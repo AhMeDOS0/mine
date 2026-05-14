@@ -816,7 +816,7 @@ function loadState() {
     if (!stored) return createDefaultState();
     const parsed = JSON.parse(stored);
     const base = createDefaultState();
-    return {
+    const result = {
       ...base,
       ...parsed,
       settings: { ...base.settings, ...(parsed.settings || {}) },
@@ -824,6 +824,13 @@ function loadState() {
       languages: Array.isArray(parsed.languages) ? parsed.languages : base.languages,
       cgpa: (parsed.cgpa && !Array.isArray(parsed.cgpa) && parsed.cgpa.semesters) ? parsed.cgpa : base.cgpa
     };
+
+    if (parsed.days && !parsed.plans) {
+      result.plans = [{ id: "finals", name: {ar: "خطة الفاينال", en: "Finals Plan"}, days: parsed.days }];
+      result.activePlanId = "finals";
+    }
+    
+    return result;
   } catch {
     return createDefaultState();
   }
@@ -1001,7 +1008,8 @@ function renderDashboard() {
   const cgpa = calculateCgpa();
   const allTasks = allTaskGroups().flatMap(group => group.tasks);
   const cvCount = completedItems().length;
-  const day = activePlan().days.find(item => item.id === new Date().toISOString().slice(0, 10)) || activePlan().days.find(item => item.tasks.some(task => !task.done)) || activePlan().days[0];
+  const planDays = activePlan().days || [];
+  const day = planDays.find(item => item.id === new Date().toISOString().slice(0, 10)) || planDays.find(item => item.tasks.some(task => !task.done)) || planDays[0];
   const grade = subjectGrade(exam);
 
   return `
@@ -1037,14 +1045,22 @@ function renderDashboard() {
       </article>
 
       <article class="panel">
-        <div class="section-head">
-          <div>
-            <h2>${esc(tr("labels.todayBlock"))}</h2>
-            <p class="muted">${esc(loc(day.date))} · ${esc(loc(day.title))}</p>
+        ${day ? `
+          <div class="section-head">
+            <div>
+              <h2>${esc(tr("labels.todayBlock"))}</h2>
+              <p class="muted">${esc(loc(day.date))} · ${esc(loc(day.title))}</p>
+            </div>
+            <button class="secondary-btn" data-route="plan" type="button">${esc(tr("buttons.open"))}</button>
           </div>
-          <button class="secondary-btn" data-route="plan" type="button">${esc(tr("buttons.open"))}</button>
-        </div>
-        ${renderTaskList(day.tasks.slice(0, 4), "day", day.id)}
+          ${renderTaskList(day.tasks.slice(0, 4), "day", day.id)}
+        ` : `
+          <div style="text-align:center; padding: 30px;">
+            <h3>${lang() === "ar" ? "مفيش مهام خطة اليوم" : "No plan tasks today"}</h3>
+            <p class="muted">${lang() === "ar" ? "افتح صفحة الخطة وأضف يوم جديد." : "Open the plan page and add a new day."}</p>
+            <button class="primary-btn" data-route="plan" style="margin-top:15px">${esc(tr("buttons.open"))}</button>
+          </div>
+        `}
       </article>
     </section>
 
@@ -1097,8 +1113,24 @@ function renderDashboard() {
 function renderPlan() {
   const isAr = lang() === "ar";
   const tab = state.planTab || "roadmap";
+  const plan = activePlan();
   
   return `
+    <div style="display: flex; gap: 10px; margin-bottom: 25px; align-items: center; overflow-x: auto; padding-bottom: 10px; border-bottom: 1px solid var(--line);">
+      <div style="flex-shrink: 0; font-weight: 800; margin-right: 10px; color: var(--accent); font-size: 0.9em; text-transform: uppercase;">${isAr ? "الخطط:" : "Plans:"}</div>
+      ${state.plans.map(p => `
+        <div style="position: relative; display: flex; align-items: center;">
+          <button class="chip ${p.id === plan.id ? 'accent' : ''}" data-action="select-plan" data-id="${p.id}" style="cursor:pointer; white-space: nowrap; padding: 6px 15px;">
+            ${esc(loc(p.name))}
+          </button>
+          ${state.plans.length > 1 ? `
+            <button data-action="delete-plan" data-id="${p.id}" style="background:none; border:none; color:var(--red); cursor:pointer; margin-left: -5px; margin-right: 5px; font-size: 1.2em; padding: 0 5px;">×</button>
+          ` : ''}
+        </div>
+      `).join("")}
+      <button class="chip" data-action="create-new-plan" style="cursor:pointer; background: var(--surface); border: 1.5px dashed var(--line); color: var(--ink);">+ ${isAr ? "خطة جديدة" : "New Plan"}</button>
+    </div>
+
     <div class="tabs" style="margin-bottom: 20px; display: flex; gap: 10px;">
       <button class="tab-btn ${tab === 'exams' ? 'active' : ''}" data-action="set-plan-tab" data-tab="exams" style="flex: 1; padding: 12px; border-radius: var(--radius); font-weight: 600; cursor: pointer; border: none; background: ${tab === 'exams' ? 'var(--accent)' : 'var(--surface)'}; color: ${tab === 'exams' ? 'white' : 'var(--ink)'};">
         ${isAr ? "مواعيد الامتحانات" : "Exam Schedule"}
@@ -1112,7 +1144,7 @@ function renderPlan() {
       <section class="panel">
         <div class="section-head">
           <div>
-            <h2>${isAr ? "خطة الفاينال" : "Finals Plan"}</h2>
+            <h2>${esc(loc(plan.name))}</h2>
             <p class="muted">${isAr ? "بين الامتحانات مراجعة فقط. الشغل الصعب يتقفل قبل العيد قدر الإمكان." : "Between exams is for review only. Close the heavy work before Eid as much as possible."}</p>
           </div>
           <span class="chip coral">${isAr ? "العيد 26-29 مايو" : "Eid: May 26-29"}</span>
@@ -1132,7 +1164,7 @@ function renderPlan() {
       </section>
     ` : `
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-        <h2 style="margin:0">${isAr ? "الخطة اليومية" : "Daily Roadmap"}</h2>
+        <h2 style="margin:0">${esc(loc(plan.name))} - ${isAr ? "الخطة اليومية" : "Daily Roadmap"}</h2>
         <button class="primary-btn" data-action="add-new-day" style="padding: 8px 16px;">+ ${isAr ? "إضافة يوم جديد" : "Add New Day"}</button>
       </div>
 
