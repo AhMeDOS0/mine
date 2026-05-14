@@ -1,5 +1,74 @@
 const STORE_KEY = "ahmed-command-center-v3";
 
+let modalResolve = null;
+
+function showCustomModal(options) {
+  const overlay = document.getElementById("modal-overlay");
+  const content = document.getElementById("modal-content");
+  const isAr = lang() === "ar";
+
+  return new Promise(resolve => {
+    modalResolve = resolve;
+    
+    content.innerHTML = `
+      <h2 class="modal-title">${esc(options.title)}</h2>
+      <p class="modal-body">${esc(options.message)}</p>
+      ${options.type === 'prompt' ? `<input type="text" class="modal-input" id="modalInput" value="${esc(options.defaultValue || '')}" placeholder="...">` : ''}
+      <div class="modal-footer">
+        ${options.type !== 'alert' ? `<button class="secondary-btn" id="modalCancelBtn">${isAr ? "إلغاء" : "Cancel"}</button>` : ''}
+        <button class="primary-btn" id="modalConfirmBtn">${isAr ? "تأكيد" : "Confirm"}</button>
+      </div>
+    `;
+
+    overlay.classList.add("show");
+    
+    const confirmBtn = document.getElementById("modalConfirmBtn");
+    const cancelBtn = document.getElementById("modalCancelBtn");
+
+    confirmBtn.onclick = () => {
+      let val = true;
+      if (options.type === 'prompt') val = document.getElementById("modalInput").value;
+      closeModal(val);
+    };
+
+    if (cancelBtn) {
+      cancelBtn.onclick = () => closeModal(null);
+    }
+
+    if (options.type === 'prompt') {
+      const input = document.getElementById("modalInput");
+      input.focus();
+      input.select();
+      input.onkeydown = (e) => {
+        if (e.key === "Enter") confirmBtn.click();
+        if (e.key === "Escape") closeModal(null);
+      };
+    }
+  });
+}
+
+function closeModal(value) {
+  const overlay = document.getElementById("modal-overlay");
+  overlay.classList.remove("show");
+  if (modalResolve) modalResolve(value);
+  modalResolve = null;
+}
+
+async function ask(message, defaultValue = "") {
+  return showCustomModal({ title: lang() === "ar" ? "مدخلات مطلوبة" : "Input Required", message, type: 'prompt', defaultValue });
+}
+
+async function confirmAction(message) {
+  return showCustomModal({ title: lang() === "ar" ? "تأكيد" : "Confirmation", message, type: 'confirm' });
+}
+
+function activePlan() {
+  if (!state.plans) return { id: 'empty', name: {ar: 'خالية', en: 'Empty'}, days: [] };
+  return state.plans.find(p => p.id === (state.activePlanId || 'finals')) || state.plans[0];
+}
+
+
+
 const gradePoints = {
   "A": 4,
   "A-": 3.67,
@@ -557,7 +626,10 @@ function createDefaultState() {
     focusSeconds: 50 * 60,
     focusSessions: 0,
     gameBudgetDone: false,
-    days: createStudyDays(),
+    plans: [
+      { id: "finals", name: txt("خطة الفاينال", "Finals Plan"), days: createStudyDays() }
+    ],
+    activePlanId: "finals",
     subjects: enrichSubjects(createSubjects()),
     languages: createLanguages(),
     cgpa: {
@@ -842,7 +914,7 @@ function taskCompletion(list) {
 
 function allTaskGroups() {
   return [
-    ...state.days.map(day => ({ type: tr("nav.plan"), source: loc(day.title), tasks: day.tasks, scope: "plan", parent: day.id })),
+    ...activePlan().days.map(day => ({ type: tr("nav.plan"), source: loc(day.title), tasks: day.tasks, scope: "plan", parent: day.id })),
     ...state.subjects.map(subject => ({ type: tr("nav.subjects"), source: loc(subject.name), tasks: subject.tasks, scope: "subject", parent: subject.id })),
     ...state.languages.map(language => ({ type: tr("nav.code"), source: loc(language.title), tasks: language.tasks, scope: "language", parent: language.id })),
     ...state.tracks.map(track => ({ type: tr("nav.code"), source: loc(track.title), tasks: track.tasks, scope: "track", parent: track.id })),
@@ -929,7 +1001,7 @@ function renderDashboard() {
   const cgpa = calculateCgpa();
   const allTasks = allTaskGroups().flatMap(group => group.tasks);
   const cvCount = completedItems().length;
-  const day = state.days.find(item => item.id === new Date().toISOString().slice(0, 10)) || state.days.find(item => item.tasks.some(task => !task.done)) || state.days[0];
+  const day = activePlan().days.find(item => item.id === new Date().toISOString().slice(0, 10)) || activePlan().days.find(item => item.tasks.some(task => !task.done)) || activePlan().days[0];
   const grade = subjectGrade(exam);
 
   return `
@@ -1069,7 +1141,7 @@ function renderPlan() {
           const todayDate = new Date();
           todayDate.setHours(0, 0, 0, 0);
           
-          const filteredDays = state.days.map(day => {
+          const filteredDays = activePlan().days.map(day => {
             const dayDate = new Date(day.id);
             const daysPast = Math.floor((todayDate - dayDate) / 86400000);
             
@@ -1851,10 +1923,10 @@ function renderCv() {
 function renderHistory() {
   const isAr = lang() === "ar";
   const today = new Date().toISOString().slice(0, 10);
-  const relevantDays = state.days.filter(day => day.id <= today);
+  const relevantDays = activePlan().days.filter(day => day.id <= today);
   
   // Get all tasks that are NOT in the daily plan to find "Extra" achievements
-  const planTaskIds = new Set(state.days.flatMap(d => d.tasks.map(t => t.id)));
+  const planTaskIds = new Set(activePlan().days.flatMap(d => d.tasks.map(t => t.id)));
   const extraTasks = allTaskGroups().flatMap(g => g.tasks.filter(t => t.doneAt && !planTaskIds.has(t.id)));
 
   return `
@@ -2029,7 +2101,7 @@ function showToast(message) {
 }
 
 function findTask(scope, parent, id) {
-  if (scope === "day") return state.days.find(item => item.id === parent)?.tasks.find(task => task.id === id);
+  if (scope === "day") return activePlan().days.find(item => item.id === parent)?.tasks.find(task => task.id === id);
   if (scope === "subject") return state.subjects.find(item => item.id === parent)?.tasks.find(task => task.id === id);
   if (scope === "language") return state.languages.find(item => item.id === parent)?.tasks.find(task => task.id === id);
   if (scope === "track") return state.tracks.find(item => item.id === parent)?.tasks.find(task => task.id === id);
@@ -2039,7 +2111,7 @@ function findTask(scope, parent, id) {
 }
 
 function deleteTask(scope, parent, id) {
-  if (scope === "day") state.days.find(item => item.id === parent).tasks = state.days.find(item => item.id === parent).tasks.filter(task => task.id !== id);
+  if (scope === "day") activePlan().days.find(item => item.id === parent).tasks = activePlan().days.find(item => item.id === parent).tasks.filter(task => task.id !== id);
   if (scope === "subject") state.subjects.find(item => item.id === parent).tasks = state.subjects.find(item => item.id === parent).tasks.filter(task => task.id !== id);
   if (scope === "language") state.languages.find(item => item.id === parent).tasks = state.languages.find(item => item.id === parent).tasks.filter(task => task.id !== id);
   if (scope === "track") state.tracks.find(item => item.id === parent).tasks = state.tracks.find(item => item.id === parent).tasks.filter(task => task.id !== id);
@@ -2049,7 +2121,7 @@ function deleteTask(scope, parent, id) {
 
 function addTask(scope, parent, textValue) {
   const task = { id: uid(scope), text: txt(textValue, textValue), done: false };
-  if (scope === "day") state.days.find(item => item.id === parent)?.tasks.push(task);
+  if (scope === "day") activePlan().days.find(item => item.id === parent)?.tasks.push(task);
   if (scope === "subject") state.subjects.find(item => item.id === parent)?.tasks.push(task);
   if (scope === "language") state.languages.find(item => item.id === parent)?.tasks.push(task);
   if (scope === "track") state.tracks.find(item => item.id === parent)?.tasks.push(task);
@@ -2224,33 +2296,65 @@ document.addEventListener("click", event => {
     render();
   }
 
+  if (action === "select-plan") {
+    state.activePlanId = actionEl.dataset.id;
+    render();
+  }
+
+  if (action === "create-new-plan") {
+    const name = await ask(lang() === "ar" ? "اسم الخطة الجديدة:" : "New Plan Name:");
+    if (!name) return;
+    const id = "plan-" + Date.now();
+    state.plans.push({
+      id: id,
+      name: { ar: name, en: name },
+      days: []
+    });
+    state.activePlanId = id;
+    saveState();
+    render();
+  }
+
+  if (action === "delete-plan") {
+    if (await confirmAction(lang() === "ar" ? "هل أنت متأكد من حذف هذه الخطة بالكامل؟" : "Are you sure you want to delete this entire plan?")) {
+      state.plans = state.plans.filter(p => p.id !== actionEl.dataset.id);
+      if (state.activePlanId === actionEl.dataset.id) {
+        state.activePlanId = state.plans[0].id;
+      }
+      saveState();
+      render();
+    }
+  }
+
   if (action === "add-new-day") {
     const isAr = lang() === "ar";
-    const dateStr = prompt(isAr ? "دخل التاريخ (YYYY-MM-DD):" : "Enter date (YYYY-MM-DD):", new Date().toISOString().slice(0, 10));
+    const dateStr = await ask(isAr ? "دخل التاريخ (YYYY-MM-DD):" : "Enter date (YYYY-MM-DD):", new Date().toISOString().slice(0, 10));
     if (!dateStr) return;
     
-    const title = prompt(isAr ? "دخل عنوان اليوم (مثلاً: مذاكرة مادة X):" : "Enter day title (e.g., Study Subject X):");
+    const title = await ask(isAr ? "دخل عنوان اليوم (مثلاً: مذاكرة مادة X):" : "Enter day title (e.g., Study Subject X):");
     if (!title) return;
 
-    if (state.days.find(d => d.id === dateStr)) {
-      alert(isAr ? "اليوم ده موجود فعلاً!" : "This day already exists!");
+    const plan = activePlan();
+    if (plan.days.find(d => d.id === dateStr)) {
+      showCustomModal({ title: isAr ? "خطأ" : "Error", message: isAr ? "اليوم ده موجود فعلاً!" : "This day already exists!", type: 'alert' });
       return;
     }
 
-    state.days.push({
+    plan.days.push({
       id: dateStr,
       date: { ar: dateStr, en: dateStr },
       title: { ar: title, en: title },
       tasks: []
     });
-    state.days.sort((a, b) => new Date(a.id) - new Date(b.id));
+    plan.days.sort((a, b) => new Date(a.id) - new Date(b.id));
     saveState();
     render();
   }
 
   if (action === "delete-day") {
-    if (confirm(tr("resetConfirm"))) {
-      state.days = state.days.filter(d => d.id !== actionEl.dataset.id);
+    if (await confirmAction(tr("resetConfirm"))) {
+      const plan = activePlan();
+      plan.days = plan.days.filter(d => d.id !== actionEl.dataset.id);
       saveState();
       render();
     }
@@ -2329,7 +2433,7 @@ function updateCgpaDOM() {
   });
 }
 
-document.addEventListener("change", event => {
+document.addEventListener("change", async event => {
   const taskBox = event.target.closest('[data-action="toggle-task"]');
   if (taskBox) {
     const task = findTask(taskBox.dataset.scope, taskBox.dataset.parent, taskBox.dataset.id);
@@ -2345,7 +2449,7 @@ document.addEventListener("change", event => {
       // ask if it should be added to CV
       const technicalScopes = ["cyber", "language", "track"];
       if (task.done && technicalScopes.includes(taskBox.dataset.scope)) {
-        if (confirm(tr("copy.addToCv"))) {
+        if (await confirmAction(tr("copy.addToCv"))) {
           task.inCv = true;
           showToast(tr("copy.cvSaved"));
         } else {
