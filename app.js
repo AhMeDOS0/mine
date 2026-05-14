@@ -598,7 +598,9 @@ function createDefaultState() {
       email: "ahmed@example.com",
       summary: "Aspiring cyber security professional and software engineer with a focus on C++ and network security."
     },
-    globalSearch: ""
+    globalSearch: "",
+    globalTasksTab: "pending",
+    planTab: "roadmap"
   };
 }
 
@@ -1021,64 +1023,83 @@ function renderDashboard() {
 }
 
 function renderPlan() {
+  const isAr = lang() === "ar";
+  const tab = state.planTab || "roadmap";
+  
   return `
-    <section class="panel">
-      <div class="section-head">
-        <div>
-          <h2>${esc(tr("titles.plan"))}</h2>
-          <p class="muted">${lang() === "ar" ? "بين الامتحانات مراجعة فقط. الشغل الصعب يتقفل قبل العيد قدر الإمكان." : "Between exams is for review only. Close the heavy work before Eid as much as possible."}</p>
-        </div>
-        <span class="chip coral">${lang() === "ar" ? "العيد 26-29 مايو" : "Eid: May 26-29"}</span>
-      </div>
-      <div class="timeline">
-        ${state.subjects.filter(subject => subject.exam?.date).sort((a, b) => new Date(a.exam.date) - new Date(b.exam.date)).map(subject => `
-          <div class="timeline-row">
-            <div class="date-box">${esc(formatDate(subject.exam.date))}<br><span class="small">${esc(loc(subject.exam.time))}</span></div>
-            <div>
-              <h3>${esc(loc(subject.name))}</h3>
-              <p class="muted">${esc(tr("labels.target"))}: ${esc(subject.targetGrade)} · ${daysLeft(subject.exam.date)} ${esc(tr("labels.daysLeft"))}</p>
-              <p>${esc(loc(subject.strategy))}</p>
-            </div>
+    <div class="tabs" style="margin-bottom: 20px; display: flex; gap: 10px;">
+      <button class="tab-btn ${tab === 'exams' ? 'active' : ''}" data-action="set-plan-tab" data-tab="exams" style="flex: 1; padding: 12px; border-radius: var(--radius); font-weight: 600; cursor: pointer; border: none; background: ${tab === 'exams' ? 'var(--accent)' : 'var(--surface)'}; color: ${tab === 'exams' ? 'white' : 'var(--ink)'};">
+        ${isAr ? "مواعيد الامتحانات" : "Exam Schedule"}
+      </button>
+      <button class="tab-btn ${tab === 'roadmap' ? 'active' : ''}" data-action="set-plan-tab" data-tab="roadmap" style="flex: 1; padding: 12px; border-radius: var(--radius); font-weight: 600; cursor: pointer; border: none; background: ${tab === 'roadmap' ? 'var(--accent)' : 'var(--surface)'}; color: ${tab === 'roadmap' ? 'white' : 'var(--ink)'};">
+        ${isAr ? "الخطة اليومية" : "Daily Roadmap"}
+      </button>
+    </div>
+
+    ${tab === 'exams' ? `
+      <section class="panel">
+        <div class="section-head">
+          <div>
+            <h2>${isAr ? "خطة الفاينال" : "Finals Plan"}</h2>
+            <p class="muted">${isAr ? "بين الامتحانات مراجعة فقط. الشغل الصعب يتقفل قبل العيد قدر الإمكان." : "Between exams is for review only. Close the heavy work before Eid as much as possible."}</p>
           </div>
-        `).join("")}
-      </div>
-    </section>
-
-    <section class="grid cols-2" style="margin-top:14px">
-      ${(() => {
-        const todayDate = new Date();
-        todayDate.setHours(0, 0, 0, 0);
-        
-        const filteredDays = state.days.map(day => {
-          const dayDate = new Date(day.id);
-          const daysPast = Math.floor((todayDate - dayDate) / 86400000);
-          
-          let filteredTasks = day.tasks.filter(task => !(daysPast > 0 && task.done));
-          filteredTasks = filteredTasks.map(task => {
-            if (daysPast > 0 && !task.done) {
-              return { ...task, isOverdue: true, daysPast };
-            }
-            return task;
-          });
-          
-          return { ...day, tasks: filteredTasks, daysPast };
-        }).filter(day => !(day.daysPast > 0 && day.tasks.length === 0));
-
-        return filteredDays.map(day => `
-          <article class="panel ${day.daysPast > 0 ? "past-due-panel" : ""}">
-            <div class="section-head">
+          <span class="chip coral">${isAr ? "العيد 26-29 مايو" : "Eid: May 26-29"}</span>
+        </div>
+        <div class="timeline">
+          ${state.subjects.filter(subject => subject.exam?.date).sort((a, b) => new Date(a.exam.date) - new Date(b.exam.date)).map(subject => `
+            <div class="timeline-row">
+              <div class="date-box">${esc(formatDate(subject.exam.date))}<br><span class="small">${esc(loc(subject.exam.time))}</span></div>
               <div>
-                <span class="chip ${day.daysPast > 0 ? "amber" : "indigo"}">${esc(loc(day.date))}</span>
-                <h3 style="margin-top:8px">${esc(loc(day.title))}</h3>
+                <h3>${esc(loc(subject.name))}</h3>
+                <p class="muted">${esc(tr("labels.target"))}: ${esc(subject.targetGrade)} · ${daysLeft(subject.exam.date)} ${esc(tr("labels.daysLeft"))}</p>
+                <p>${esc(loc(subject.strategy))}</p>
               </div>
-              <span class="chip">${taskCompletion(day.tasks)}%</span>
             </div>
-            ${renderTaskList(day.tasks, "day", day.id)}
-            ${day.daysPast <= 0 ? taskForm("add-day-task", day.id, lang() === "ar" ? "أضف مهمة في اليوم" : "Add a task to this day") : ''}
-          </article>
-        `).join("");
-      })()}
-    </section>
+          `).join("")}
+        </div>
+      </section>
+    ` : `
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h2 style="margin:0">${isAr ? "الخطة اليومية" : "Daily Roadmap"}</h2>
+        <button class="primary-btn" data-action="add-new-day" style="padding: 8px 16px;">+ ${isAr ? "إضافة يوم جديد" : "Add New Day"}</button>
+      </div>
+
+      <section class="grid cols-2">
+        ${(() => {
+          const todayDate = new Date();
+          todayDate.setHours(0, 0, 0, 0);
+          
+          const filteredDays = state.days.map(day => {
+            const dayDate = new Date(day.id);
+            const daysPast = Math.floor((todayDate - dayDate) / 86400000);
+            
+            let filteredTasks = day.tasks.filter(task => !(daysPast > 0 && task.done));
+            filteredTasks = filteredTasks.map(task => {
+              if (daysPast > 0 && !task.done) return { ...task, isOverdue: true, daysPast };
+              return task;
+            });
+            return { ...day, tasks: filteredTasks, daysPast };
+          }).filter(day => !(day.daysPast > 0 && day.tasks.length === 0));
+
+          return filteredDays.map(day => `
+            <article class="panel ${day.daysPast > 0 ? "past-due-panel" : ""}">
+              <div class="section-head">
+                <div>
+                  <span class="chip ${day.daysPast > 0 ? "amber" : "indigo"}">${esc(loc(day.date))}</span>
+                  <h3 style="margin-top:8px">${esc(loc(day.title))}</h3>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px">
+                  <span class="chip">${taskCompletion(day.tasks)}%</span>
+                  <button class="delete-btn" data-action="delete-day" data-id="${esc(day.id)}" style="background:transparent; border:none; color:var(--red); cursor:pointer; font-size: 1.2em;">×</button>
+                </div>
+              </div>
+              ${renderTaskList(day.tasks, "day", day.id)}
+              ${day.daysPast <= 0 ? taskForm("add-day-task", day.id, isAr ? "أضف مهمة في اليوم" : "Add a task to this day") : ''}
+            </article>
+          `).join("");
+        })()}
+      </section>
+    `}
   `;
 }
 
@@ -1898,6 +1919,7 @@ function renderHistory() {
 function renderGlobalTasks() {
   const isAr = lang() === "ar";
   const query = (state.globalSearch || "").toLowerCase();
+  const tab = state.globalTasksTab || "pending";
   
   const allGroups = allTaskGroups();
   const allTasks = allGroups.flatMap(g => g.tasks.map(t => ({ ...t, groupType: g.type, groupSource: g.source, scope: g.scope, parent: g.parent })));
@@ -1915,11 +1937,7 @@ function renderGlobalTasks() {
       <div class="section-head">
         <div>
           <h2>${isAr ? "مركز المهام الشامل" : "Global Task Center"}</h2>
-          <p class="muted">${isAr ? "بحث وتحكم في كل مهام المشروع من مكان واحد." : "Search and manage every task from one place."}</p>
-        </div>
-        <div style="text-align: right">
-          <span class="chip accent">${pending.length} ${isAr ? "متبقية" : "Pending"}</span>
-          <span class="chip green" style="margin-left: 5px;">${completed.length} ${isAr ? "منتهية" : "Done"}</span>
+          <p class="muted">${isAr ? "تحكم كامل في كل مهام المشروع." : "Complete control over all project tasks."}</p>
         </div>
       </div>
       <div class="progress" style="--value:${progress}%; height: 10px; margin-top: 15px;"><span></span></div>
@@ -1927,31 +1945,33 @@ function renderGlobalTasks() {
     </section>
 
     <div class="panel" style="margin-top: 14px;">
-      <input type="text" class="search-input" placeholder="${isAr ? "بحث بالاسم أو المادة..." : "Search by name or subject..."}" value="${esc(state.globalSearch)}" data-action="global-search" style="width: 100%; padding: 12px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface); color: var(--ink);">
+      <input type="text" class="search-input" placeholder="${isAr ? "بحث..." : "Search..."}" value="${esc(state.globalSearch)}" data-action="global-search" style="width: 100%; padding: 12px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface); color: var(--ink);">
+    </div>
+
+    <div class="tabs" style="margin-top: 14px; display: flex; gap: 10px;">
+      <button class="tab-btn ${tab === 'pending' ? 'active' : ''}" data-action="set-global-tab" data-tab="pending" style="flex: 1; padding: 12px; border-radius: var(--radius); font-weight: 600; cursor: pointer; border: none; background: ${tab === 'pending' ? 'var(--accent)' : 'var(--surface)'}; color: ${tab === 'pending' ? 'white' : 'var(--ink)'};">
+        ${isAr ? "قيد العمل" : "Still Working"} (${pending.length})
+      </button>
+      <button class="tab-btn ${tab === 'completed' ? 'active' : ''}" data-action="set-global-tab" data-tab="completed" style="flex: 1; padding: 12px; border-radius: var(--radius); font-weight: 600; cursor: pointer; border: none; background: ${tab === 'completed' ? 'var(--green)' : 'var(--surface)'}; color: ${tab === 'completed' ? 'white' : 'var(--ink)'};">
+        ${isAr ? "المهام المكتملة" : "Finished"} (${completed.length})
+      </button>
     </div>
 
     <div id="global-tasks-results" style="margin-top: 14px;">
-      ${renderGlobalTaskList(pending, completed)}
+      ${renderGlobalTaskList(pending, completed, tab)}
     </div>
   `;
 }
 
-function renderGlobalTaskList(pending, completed) {
+function renderGlobalTaskList(pending, completed, tab) {
   const isAr = lang() === "ar";
-  return `
-    ${pending.length > 0 ? `
-      <h3 class="muted" style="margin: 20px 0 10px 10px; font-size: 0.9em; text-transform: uppercase;">${isAr ? "قيد العمل" : "Still Working"}</h3>
-      ${pending.map(task => renderGlobalTaskItem(task)).join("")}
-    ` : ""}
-
-    ${completed.length > 0 ? `
-      <h3 class="muted" style="margin: 30px 0 10px 10px; font-size: 0.9em; text-transform: uppercase;">${isAr ? "المهام المكتملة" : "Finished"}</h3>
-      ${completed.map(task => renderGlobalTaskItem(task)).join("")}
-    ` : ""}
-
-    ${pending.length === 0 && completed.length === 0 ? `
-      <div class="panel" style="text-align: center; padding: 40px;"><h2>${isAr ? "مفيش مهام مطابقة" : "No matching tasks"}</h2></div>
-    ` : ""}
+  const list = tab === "pending" ? pending : completed;
+  
+  return list.length > 0 ? list.map(task => renderGlobalTaskItem(task)).join("") : `
+    <div class="panel" style="text-align: center; padding: 40px;">
+      <h2>${isAr ? "مفيش مهام في القائمة دي" : "No tasks in this list"}</h2>
+      <p class="muted">${isAr ? "استخدم البحث أو غير التبويب." : "Use search or switch tabs."}</p>
+    </div>
   `;
 }
 
@@ -1975,6 +1995,8 @@ function renderGlobalTaskItem(task) {
 function updateGlobalTasksDOM() {
   if (getRoute() !== "globalTasks") return;
   const query = (state.globalSearch || "").toLowerCase();
+  const tab = state.globalTasksTab || "pending";
+  
   const allGroups = allTaskGroups();
   const allTasks = allGroups.flatMap(g => g.tasks.map(t => ({ ...t, groupType: g.type, groupSource: g.source, scope: g.scope, parent: g.parent })));
   const filtered = allTasks.filter(t => loc(t.text).toLowerCase().includes(query) || t.groupSource.toLowerCase().includes(query));
@@ -1983,7 +2005,7 @@ function updateGlobalTasksDOM() {
   
   const resultsDiv = document.getElementById("global-tasks-results");
   if (resultsDiv) {
-    resultsDiv.innerHTML = renderGlobalTaskList(pending, completed);
+    resultsDiv.innerHTML = renderGlobalTaskList(pending, completed, tab);
   }
 }
 
@@ -2190,6 +2212,48 @@ document.addEventListener("click", event => {
   if (action === "toggle-game-budget") {
     state.gameBudgetDone = !state.gameBudgetDone;
     render();
+  }
+
+  if (action === "set-global-tab") {
+    state.globalTasksTab = actionEl.dataset.tab;
+    render();
+  }
+
+  if (action === "set-plan-tab") {
+    state.planTab = actionEl.dataset.tab;
+    render();
+  }
+
+  if (action === "add-new-day") {
+    const isAr = lang() === "ar";
+    const dateStr = prompt(isAr ? "دخل التاريخ (YYYY-MM-DD):" : "Enter date (YYYY-MM-DD):", new Date().toISOString().slice(0, 10));
+    if (!dateStr) return;
+    
+    const title = prompt(isAr ? "دخل عنوان اليوم (مثلاً: مذاكرة مادة X):" : "Enter day title (e.g., Study Subject X):");
+    if (!title) return;
+
+    if (state.days.find(d => d.id === dateStr)) {
+      alert(isAr ? "اليوم ده موجود فعلاً!" : "This day already exists!");
+      return;
+    }
+
+    state.days.push({
+      id: dateStr,
+      date: { ar: dateStr, en: dateStr },
+      title: { ar: title, en: title },
+      tasks: []
+    });
+    state.days.sort((a, b) => new Date(a.id) - new Date(b.id));
+    saveState();
+    render();
+  }
+
+  if (action === "delete-day") {
+    if (confirm(tr("resetConfirm"))) {
+      state.days = state.days.filter(d => d.id !== actionEl.dataset.id);
+      saveState();
+      render();
+    }
   }
 
   if (action === "timer-start" && !timerInterval) {
