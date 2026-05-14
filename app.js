@@ -1902,8 +1902,9 @@ function renderGlobalTasks() {
   const allGroups = allTaskGroups();
   const allTasks = allGroups.flatMap(g => g.tasks.map(t => ({ ...t, groupType: g.type, groupSource: g.source, scope: g.scope, parent: g.parent })));
   
-  const pending = allTasks.filter(t => !t.done);
-  const filtered = pending.filter(t => loc(t.text).toLowerCase().includes(query) || t.groupSource.toLowerCase().includes(query));
+  const filtered = allTasks.filter(t => loc(t.text).toLowerCase().includes(query) || t.groupSource.toLowerCase().includes(query));
+  const pending = filtered.filter(t => !t.done);
+  const completed = filtered.filter(t => t.done);
   
   const totalCount = allTasks.length;
   const doneCount = allTasks.filter(t => t.done).length;
@@ -1913,36 +1914,77 @@ function renderGlobalTasks() {
     <section class="panel hero">
       <div class="section-head">
         <div>
-          <h2>${isAr ? "المهام المتبقية" : "Master To-Do List"}</h2>
-          <p class="muted">${isAr ? "كل اللي لسه مخلصتوش في المشروع مجمع هنا." : "Everything you haven't finished yet, all in one place."}</p>
+          <h2>${isAr ? "مركز المهام الشامل" : "Global Task Center"}</h2>
+          <p class="muted">${isAr ? "بحث وتحكم في كل مهام المشروع من مكان واحد." : "Search and manage every task from one place."}</p>
         </div>
-        <span class="chip accent">${pending.length} ${isAr ? "مهمة متبقية" : "Pending"}</span>
+        <div style="text-align: right">
+          <span class="chip accent">${pending.length} ${isAr ? "متبقية" : "Pending"}</span>
+          <span class="chip green" style="margin-left: 5px;">${completed.length} ${isAr ? "منتهية" : "Done"}</span>
+        </div>
       </div>
       <div class="progress" style="--value:${progress}%; height: 10px; margin-top: 15px;"><span></span></div>
       <p class="small muted" style="margin-top: 5px;">${isAr ? "إجمالي الإنجاز" : "Overall progress"}: ${progress}%</p>
     </section>
 
     <div class="panel" style="margin-top: 14px;">
-      <input type="text" class="search-input" placeholder="${isAr ? "بحث في كل المهام..." : "Search all tasks..."}" value="${esc(state.globalSearch)}" data-action="global-search" style="width: 100%; padding: 12px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface); color: var(--ink);">
+      <input type="text" class="search-input" placeholder="${isAr ? "بحث بالاسم أو المادة..." : "Search by name or subject..."}" value="${esc(state.globalSearch)}" data-action="global-search" style="width: 100%; padding: 12px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface); color: var(--ink);">
     </div>
 
-    <div style="margin-top: 14px;">
-      ${filtered.length > 0 ? filtered.map(task => `
-        <div class="panel" style="margin-bottom: 10px; padding: 12px 20px;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div style="display: flex; align-items: center; gap: 15px;">
-              <input type="checkbox" data-action="toggle-task" data-scope="${esc(task.scope)}" data-parent="${esc(task.parent)}" data-id="${esc(task.id)}" style="width: 20px; height: 20px; cursor: pointer;">
-              <div>
-                <strong>${esc(loc(task.text))}</strong>
-                <p class="small muted">${esc(task.groupType)} · ${esc(task.groupSource)}</p>
-              </div>
-            </div>
-            <span class="chip">${esc(task.groupType)}</span>
-          </div>
-        </div>
-      `).join("") : `<div class="panel" style="text-align: center; padding: 40px;"><h2>${isAr ? "مفيش مهام مطابقة" : "No matching tasks"}</h2></div>`}
+    <div id="global-tasks-results" style="margin-top: 14px;">
+      ${renderGlobalTaskList(pending, completed)}
     </div>
   `;
+}
+
+function renderGlobalTaskList(pending, completed) {
+  const isAr = lang() === "ar";
+  return `
+    ${pending.length > 0 ? `
+      <h3 class="muted" style="margin: 20px 0 10px 10px; font-size: 0.9em; text-transform: uppercase;">${isAr ? "قيد العمل" : "Still Working"}</h3>
+      ${pending.map(task => renderGlobalTaskItem(task)).join("")}
+    ` : ""}
+
+    ${completed.length > 0 ? `
+      <h3 class="muted" style="margin: 30px 0 10px 10px; font-size: 0.9em; text-transform: uppercase;">${isAr ? "المهام المكتملة" : "Finished"}</h3>
+      ${completed.map(task => renderGlobalTaskItem(task)).join("")}
+    ` : ""}
+
+    ${pending.length === 0 && completed.length === 0 ? `
+      <div class="panel" style="text-align: center; padding: 40px;"><h2>${isAr ? "مفيش مهام مطابقة" : "No matching tasks"}</h2></div>
+    ` : ""}
+  `;
+}
+
+function renderGlobalTaskItem(task) {
+  return `
+    <div class="panel" style="margin-bottom: 10px; padding: 12px 20px; opacity: ${task.done ? 0.6 : 1}">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+          <input type="checkbox" data-action="toggle-task" data-scope="${esc(task.scope)}" data-parent="${esc(task.parent)}" data-id="${esc(task.id)}" ${task.done ? "checked" : ""} style="width: 20px; height: 20px; cursor: pointer;">
+          <div>
+            <strong style="${task.done ? 'text-decoration: line-through;' : ''}">${esc(loc(task.text))}</strong>
+            <p class="small muted">${esc(task.groupType)} · ${esc(task.groupSource)}</p>
+          </div>
+        </div>
+        <span class="chip">${esc(task.groupType)}</span>
+      </div>
+    </div>
+  `;
+}
+
+function updateGlobalTasksDOM() {
+  if (getRoute() !== "globalTasks") return;
+  const query = (state.globalSearch || "").toLowerCase();
+  const allGroups = allTaskGroups();
+  const allTasks = allGroups.flatMap(g => g.tasks.map(t => ({ ...t, groupType: g.type, groupSource: g.source, scope: g.scope, parent: g.parent })));
+  const filtered = allTasks.filter(t => loc(t.text).toLowerCase().includes(query) || t.groupSource.toLowerCase().includes(query));
+  const pending = filtered.filter(t => !t.done);
+  const completed = filtered.filter(t => t.done);
+  
+  const resultsDiv = document.getElementById("global-tasks-results");
+  if (resultsDiv) {
+    resultsDiv.innerHTML = renderGlobalTaskList(pending, completed);
+  }
 }
 
 function render() {
@@ -2473,7 +2515,7 @@ document.addEventListener("input", event => {
   const searchInput = event.target.closest('[data-action="global-search"]');
   if (searchInput) {
     state.globalSearch = searchInput.value;
-    render();
+    updateGlobalTasksDOM();
   }
 });
 
