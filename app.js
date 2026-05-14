@@ -1115,19 +1115,20 @@ function renderDashboard() {
 
 function renderPlan() {
   const isAr = lang() === "ar";
-  const tab = state.planTab || "roadmap";
+  let tab = state.planTab || "roadmap";
   const plan = activePlan();
+  if (plan.id !== 'finals') tab = 'roadmap';
   
   return `
     <div style="display: flex; gap: 10px; margin-bottom: 25px; align-items: center; overflow-x: auto; padding-bottom: 10px; border-bottom: 1px solid var(--line);">
       <div style="flex-shrink: 0; font-weight: 800; margin-right: 10px; color: var(--accent); font-size: 0.9em; text-transform: uppercase;">${isAr ? "الخطط:" : "Plans:"}</div>
       ${state.plans.map(p => `
-        <div style="position: relative; display: flex; align-items: center;">
-          <button class="chip ${p.id === plan.id ? 'accent' : ''}" data-action="select-plan" data-id="${p.id}" style="cursor:pointer; white-space: nowrap; padding: 6px 15px;">
+        <div style="display: flex; align-items: center; background: ${p.id === plan.id ? 'var(--accent)' : 'var(--surface)'}; border-radius: 100px; padding: 2px 5px 2px 12px; transition: 0.2s;">
+          <button data-action="select-plan" data-id="${p.id}" style="background:none; border:none; color: ${p.id === plan.id ? 'white' : 'var(--ink)'}; cursor:pointer; white-space: nowrap; font-weight: 600; padding: 4px 0;">
             ${esc(loc(p.name))}
           </button>
           ${state.plans.length > 1 ? `
-            <button data-action="delete-plan" data-id="${p.id}" style="background:none; border:none; color:var(--red); cursor:pointer; margin-left: -5px; margin-right: 5px; font-size: 1.2em; padding: 0 5px;">×</button>
+            <button data-action="delete-plan" data-id="${p.id}" style="background:none; border:none; color: ${p.id === plan.id ? 'rgba(255,255,255,0.7)' : 'var(--red)'}; cursor:pointer; font-size: 1.1em; padding: 0 8px; line-height: 1;">×</button>
           ` : ''}
         </div>
       `).join("")}
