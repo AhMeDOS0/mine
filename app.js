@@ -1140,21 +1140,20 @@ function renderPlan() {
           <span class="chip coral">${esc(loc(plan.name))}</span>
           <h2 style="margin-top:8px">${isAr ? "خطة المذاكرة" : "Study Plan"}</h2>
         </div>
-        <div class="page-actions">
-          <button class="tab-btn ${tab === 'roadmap' ? 'active' : ''}" data-action="set-plan-tab" data-tab="roadmap" type="button">${isAr ? "خارطة الطريق" : "Daily Roadmap"}</button>
-          ${plan.id === 'finals' ? `<button class="tab-btn ${tab === 'exams' ? 'active' : ''}" data-action="set-plan-tab" data-tab="exams" type="button">${isAr ? "جدول الامتحانات" : "Exam Schedule"}</button>` : ''}
+        <button class="secondary-btn" data-action="create-new-plan" type="button" style="padding: 4px 10px; font-size:13px">+ ${isAr ? "خطة مخصصة" : "Custom Plan"}</button>
+        <button class="tab-btn ${tab === 'roadmap' ? 'active' : ''}" data-action="set-plan-tab" data-tab="roadmap" type="button">${isAr ? "خارطة الطريق" : "Daily Roadmap"}</button>
+        ${plan.id === 'finals' ? `<button class="tab-btn ${tab === 'exams' ? 'active' : ''}" data-action="set-plan-tab" data-tab="exams" type="button">${isAr ? "جدول الامتحانات" : "Exam Schedule"}</button>` : ''}
+      </div>
+    </div>
+    <div class="tabs" style="margin-top:14px; border-top: 1px solid var(--line); padding-top:12px">
+      ${state.plans.map(p => `
+        <div class="chip ${p.id === plan.id ? "accent" : "indigo"}" data-action="set-active-plan" data-id="${p.id}" style="cursor:pointer; display:inline-flex; align-items:center; gap:8px; padding: 4px 12px; font-size:13px">
+          ${esc(loc(p.name))}
+          ${p.id !== 'finals' ? `<span data-action="delete-plan" data-id="${p.id}" style="color:var(--red); font-weight:bold; cursor:pointer; padding: 0 4px; font-size:1.2em">×</span>` : ''}
         </div>
-      </div>
-      <div class="tabs" style="margin-top:12px">
-        ${state.plans.map(p => `
-          <div class="chip ${p.id === plan.id ? "accent" : ""}" data-action="set-active-plan" data-id="${p.id}" style="cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
-            ${esc(loc(p.name))}
-            ${p.id !== 'finals' ? `<span data-action="delete-plan" data-id="${p.id}" style="color:var(--red); font-weight:bold; padding: 2px 4px;">×</span>` : ''}
-          </div>
-        `).join("")}
-        <button class="secondary-btn" data-action="add-custom-plan" style="min-height:26px; padding:3px 8px; font-size:12px">+ ${isAr ? "خطة مخصصة" : "Custom Plan"}</button>
-      </div>
-    </section>
+      `).join("")}
+    </div>
+  </section>
 
     ${tab === 'exams' ? `
       <section class="panel">
@@ -2663,7 +2662,7 @@ document.addEventListener("submit", async event => {
   const textValue = String(data.get("text") || "").trim();
 
   if (type.startsWith("add-") && type.endsWith("-task") && textValue) {
-    const rec = await ask(isAr ? "التكرار (0=مرة واحدة، 1=يومي، 7=أسبوعي):" : "Recurrence (0=once, 1=daily, 7=weekly):", "0");
+    const rec = await ask(isAr ? "كم يوم يتكرر؟ (0=مرة، 1=يومي، 7=أسبوعي):" : "Repeat every X days? (0=once, 1=daily, 7=weekly):", "0");
     addTask(type.split("-")[1], form.dataset.parent, textValue, rec);
     saveState();
     render();
@@ -2671,7 +2670,7 @@ document.addEventListener("submit", async event => {
   }
   
   if (type === "add-todo" && textValue) {
-    const rec = await ask(isAr ? "التكرار (0=مرة واحدة، 1=يومي، 7=أسبوعي):" : "Recurrence (0=once, 1=daily, 7=weekly):", "0");
+    const rec = await ask(isAr ? "كم يوم يتكرر؟ (0=مرة، 1=يومي، 7=أسبوعي):" : "Repeat every X days? (0=once, 1=daily, 7=weekly):", "0");
     addTask("todo", "", textValue, rec);
     saveState();
     render();
