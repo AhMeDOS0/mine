@@ -807,8 +807,6 @@ function createCyberTrack() {
   ];
 }
 
-let state = loadState();
-let timerInterval = null;
 
 function loadState() {
   try {
@@ -841,6 +839,7 @@ function saveState() {
 }
 
 function lang() {
+  if (typeof state === "undefined" || !state || !state.settings) return "ar";
   return state.settings.lang || "ar";
 }
 
@@ -2711,6 +2710,9 @@ document.addEventListener("blur", event => {
 
 window.addEventListener("hashchange", render);
 
+let state = loadState();
+let timerInterval = null;
+render();
 document.addEventListener("input", event => {
   const searchInput = event.target.closest('[data-action="global-search"]');
   if (searchInput) {
