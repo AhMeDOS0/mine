@@ -2188,7 +2188,7 @@ function importLanguageObject(language) {
   state.activeLanguageTab = "overview";
 }
 
-document.addEventListener("click", event => {
+document.addEventListener("click", async event => {
   const routeButton = event.target.closest("[data-route]");
   if (routeButton) {
     window.location.hash = routeButton.dataset.route;
