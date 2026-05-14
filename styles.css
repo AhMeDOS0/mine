@@ -440,6 +440,21 @@ h3 {
   font-size: 13px;
 }
 
+.past-due-panel {
+  border-color: var(--amber) !important;
+  background: color-mix(in srgb, var(--amber) 4%, var(--surface)) !important;
+  animation: softAmberGlow 3s ease-in-out infinite !important;
+}
+
+@keyframes softAmberGlow {
+  0%, 100% { box-shadow: var(--shadow); }
+  50% { box-shadow: 0 0 20px color-mix(in srgb, var(--amber) 25%, transparent); }
+}
+
+.all-done-panel {
+  opacity: 0.85;
+}
+
 .chip {
   display: inline-flex;
   align-items: center;

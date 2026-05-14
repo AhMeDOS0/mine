@@ -2,6 +2,36 @@ const STORE_KEY = "ahmed-command-center-v3"; // Updated: 2026-05-14 17:40
 
 let modalResolve = null;
 
+function getLocalTodayId() {
+  const localToday = new Date();
+  const year = localToday.getFullYear();
+  const month = String(localToday.getMonth() + 1).padStart(2, '0');
+  const day = String(localToday.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function getDaysBetween(d1, d2) {
+  const t1 = new Date(d1).getTime();
+  const t2 = new Date(d2).getTime();
+  return Math.floor((t2 - t1) / (1000 * 60 * 60 * 24));
+}
+
+function checkRecurringTasks() {
+  const todayId = getLocalTodayId();
+  const allTasks = allTaskGroups().flatMap(g => g.tasks);
+  
+  allTasks.forEach(task => {
+    if (task.recurrence && task.done && task.lastDoneDate && task.lastDoneDate !== todayId) {
+      const daysPassed = getDaysBetween(task.lastDoneDate, todayId);
+      if (daysPassed >= task.recurrence) {
+        task.done = false;
+        // Keep the old lastDoneDate if it's not yet time to reset again? 
+        // No, if we reset, we wait for the NEXT completion.
+      }
+    }
+  });
+}
+
 function showCustomModal(options) {
   const overlay = document.getElementById("modal-overlay");
   const content = document.getElementById("modal-content");
@@ -108,7 +138,8 @@ const ui = {
       cgpa: "حاسبة CGPA",
       focus: "To-do وتركيز",
       projects: "المشاريع",
-      cv: "CV والإنجازات"
+      cv: "CV والإنجازات",
+      history: "سجل الإنجازات"
     },
     buttons: {
       focus: "ابدأ بلوك",
@@ -214,7 +245,8 @@ const ui = {
       cgpa: "CGPA Calculator",
       focus: "To-do and Focus",
       projects: "Projects",
-      cv: "CV and Achievements"
+      cv: "CV & Achievements",
+      history: "Activity History"
     },
     buttons: {
       focus: "Start block",
@@ -884,6 +916,8 @@ function applyPreferences() {
   const dateStr = formatDate(todayId);
   const throughText = lang() === "ar" ? "إلى نهاية الفاينلز" : "through finals";
   document.getElementById("pageEyebrow").textContent = `${dateStr} ${throughText}`;
+  const brandSub = document.getElementById("brandSubtitle");
+  if (brandSub) brandSub.textContent = dateStr;
 }
 
 function getRoute() {
@@ -904,9 +938,10 @@ function formatDate(date) {
 }
 
 function daysLeft(date) {
-  const today = new Date();
-  const target = new Date(`${date}T23:59:59`);
-  return Math.max(0, Math.ceil((target - today) / 86400000));
+  const localToday = new Date();
+  localToday.setHours(0, 0, 0, 0);
+  const target = new Date(`${date}T00:00:00`);
+  return Math.max(0, Math.round((target - localToday) / 86400000));
 }
 
 function subjectGrade(subject) {
@@ -1103,61 +1138,6 @@ function renderDashboard() {
           const langId = "cpp";
           const language = state.languages.find(l => l.id === langId);
           const langName = language ? loc(language.name || language.title) : "C++";
-          const challenge = challengeBank[langId] ? dailyChallenge(langId) : null;
-          const solved = challenge ? state.solvedChallenges[challengeKey(langId, challenge.id)] : null;
-          if (!challenge) return `<p class="muted">No challenge available</p>`;
-          return `
-            <div class="section-head">
-              <div>
-                <h2>${esc(tr("labels.dailyChallenge"))}</h2>
-                <p class="muted">${lang() === "ar" ? "تحدي اليوم من لغة" : "Today's challenge from"} ${esc(langName)}</p>
-              </div>
-              <span class="chip indigo">${esc(langName)}</span>
-            </div>
-            <h3>${esc(challenge.title)}</h3>
-            <p>${esc(loc(challenge.prompt))}</p>
-            <div class="inline-actions" style="margin-top:12px">
-              <button class="primary-btn" data-action="solve-challenge" data-lang="${esc(langId)}" type="button" ${solved ? "disabled" : ""}>${esc(solved ? tr("buttons.solved") : tr("buttons.markDone"))}</button>
-              <button class="secondary-btn" data-action="next-challenge" data-lang="${esc(langId)}" type="button">${esc(tr("buttons.next"))}</button>
-            </div>
-          `;
-        })()}
-      </article>
-    </section>
-  `;
-}
-
-function renderPlan() {
-  const isAr = lang() === "ar";
-  let tab = state.planTab || "roadmap";
-  const plan = activePlan();
-  if (plan.id !== 'finals') tab = 'roadmap';
-  
-  return `
-    <div style="display: flex; gap: 10px; margin-bottom: 25px; align-items: center; overflow-x: auto; padding-bottom: 10px; border-bottom: 1px solid var(--line);">
-      <div style="flex-shrink: 0; font-weight: 800; margin-right: 10px; color: var(--accent); font-size: 0.9em; text-transform: uppercase;">${isAr ? "الخطط:" : "Plans:"}</div>
-      ${state.plans.map(p => `
-        <div style="display: flex; align-items: center; background: ${p.id === plan.id ? 'var(--accent)' : 'var(--surface)'}; border-radius: 100px; padding: 2px 5px 2px 12px; transition: 0.2s;">
-          <button data-action="select-plan" data-id="${p.id}" style="background:none; border:none; color: ${p.id === plan.id ? 'white' : 'var(--ink)'}; cursor:pointer; white-space: nowrap; font-weight: 600; padding: 4px 0;">
-            ${esc(loc(p.name))}
-          </button>
-          ${state.plans.length > 1 ? `
-            <button data-action="delete-plan" data-id="${p.id}" style="background:none; border:none; color: ${p.id === plan.id ? 'rgba(255,255,255,0.7)' : 'var(--red)'}; cursor:pointer; font-size: 1.1em; padding: 0 8px; line-height: 1;">×</button>
-          ` : ''}
-        </div>
-      `).join("")}
-      <button class="chip" data-action="create-new-plan" style="cursor:pointer; background: var(--surface); border: 1.5px dashed var(--line); color: var(--ink);">+ ${isAr ? "خطة جديدة" : "New Plan"}</button>
-    </div>
-
-    <div class="tabs" style="margin-bottom: 20px; display: flex; gap: 10px;">
-      ${plan.id === 'finals' ? `
-        <button class="tab-btn ${tab === 'exams' ? 'active' : ''}" data-action="set-plan-tab" data-tab="exams" style="flex: 1; padding: 12px; border-radius: var(--radius); font-weight: 600; cursor: pointer; border: none; background: ${tab === 'exams' ? 'var(--accent)' : 'var(--surface)'}; color: ${tab === 'exams' ? 'white' : 'var(--ink)'};">
-          ${isAr ? "مواعيد الامتحانات" : "Exam Schedule"}
-        </button>
-      ` : ''}
-      <button class="tab-btn ${tab === 'roadmap' ? 'active' : ''}" data-action="set-plan-tab" data-tab="roadmap" style="flex: 1; padding: 12px; border-radius: var(--radius); font-weight: 600; cursor: pointer; border: none; background: ${tab === 'roadmap' ? 'var(--accent)' : 'var(--surface)'}; color: ${tab === 'roadmap' ? 'white' : 'var(--ink)'};">
-        ${isAr ? "الخطة اليومية" : "Daily Roadmap"}
-      </button>
     </div>
 
     ${tab === 'exams' ? `
@@ -1205,11 +1185,15 @@ function renderPlan() {
             return { ...day, tasks: filteredTasks, daysPast };
           }).filter(day => !(day.daysPast > 0 && day.tasks.length === 0));
 
-          return filteredDays.map(day => `
-            <article class="panel ${day.daysPast > 0 ? "past-due-panel" : ""}">
+          return filteredDays.map(day => {
+            const allDone = day.tasks.length > 0 && day.tasks.every(t => t.done);
+            return `
+            <article class="panel ${day.daysPast > 0 ? "past-due-panel" : ""} ${allDone ? "all-done-panel" : ""}">
               <div class="section-head">
                 <div>
-                  <span class="chip ${day.daysPast > 0 ? "amber" : "indigo"}">${esc(loc(day.date))}</span>
+                  <span class="chip ${allDone ? "finished" : (day.daysPast > 0 ? "amber" : "indigo")}" style="${allDone ? "text-decoration: line-through; opacity: 0.7;" : ""}">
+                    ${esc(loc(day.date))}
+                  </span>
                   <h3 style="margin-top:8px">${esc(loc(day.title))}</h3>
                 </div>
                 <div style="display:flex; align-items:center; gap:8px">
@@ -1974,7 +1958,7 @@ function renderCv() {
 
 function renderHistory() {
   const isAr = lang() === "ar";
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getLocalTodayId();
   const relevantDays = activePlan().days.filter(day => day.id <= today);
   
   // Get all tasks that are NOT in the daily plan to find "Extra" achievements
@@ -2171,8 +2155,14 @@ function deleteTask(scope, parent, id) {
   if (scope === "todo") state.todos = state.todos.filter(task => task.id !== id);
 }
 
-function addTask(scope, parent, textValue) {
-  const task = { id: uid(scope), text: txt(textValue, textValue), done: false };
+function addTask(scope, parent, textValue, recurrence = 0) {
+  const task = { 
+    id: uid(scope), 
+    text: txt(textValue, textValue), 
+    done: false, 
+    recurrence: parseInt(recurrence) || 0,
+    lastDoneDate: null 
+  };
   if (scope === "day") activePlan().days.find(item => item.id === parent)?.tasks.push(task);
   if (scope === "subject") state.subjects.find(item => item.id === parent)?.tasks.push(task);
   if (scope === "language") state.languages.find(item => item.id === parent)?.tasks.push(task);
@@ -2646,20 +2636,30 @@ document.addEventListener("change", async event => {
   }
 });
 
-document.addEventListener("submit", event => {
+document.addEventListener("submit", async event => {
   const form = event.target.closest("form[data-form]");
   if (!form) return;
   event.preventDefault();
+  const isAr = lang() === "ar";
   const data = new FormData(form);
   const type = form.dataset.form;
   const textValue = String(data.get("text") || "").trim();
 
-  if (type === "add-day-task" && textValue) addTask("day", form.dataset.parent, textValue);
-  if (type === "add-subject-task" && textValue) addTask("subject", form.dataset.parent, textValue);
-  if (type === "add-language-task" && textValue) addTask("language", form.dataset.parent, textValue);
-  if (type === "add-track-task" && textValue) addTask("track", form.dataset.parent, textValue);
-  if (type === "add-cyber-task" && textValue) addTask("cyber", form.dataset.parent, textValue);
-  if (type === "add-todo" && textValue) addTask("todo", "", textValue);
+  if (type.startsWith("add-") && type.endsWith("-task") && textValue) {
+    const rec = await ask(isAr ? "التكرار (0=مرة واحدة، 1=يومي، 7=أسبوعي):" : "Recurrence (0=once, 1=daily, 7=weekly):", "0");
+    addTask(type.split("-")[1], form.dataset.parent, textValue, rec);
+    saveState();
+    render();
+    return;
+  }
+  
+  if (type === "add-todo" && textValue) {
+    const rec = await ask(isAr ? "التكرار (0=مرة واحدة، 1=يومي، 7=أسبوعي):" : "Recurrence (0=once, 1=daily, 7=weekly):", "0");
+    addTask("todo", "", textValue, rec);
+    saveState();
+    render();
+    return;
+  }
 
   if (type === "add-grade") {
     const subject = state.subjects.find(item => item.id === form.dataset.subject);
@@ -2734,6 +2734,7 @@ window.addEventListener("hashchange", render);
 
 let state;
 state = loadState();
+checkRecurringTasks();
 let timerInterval = null;
 render();
 document.addEventListener("input", event => {
