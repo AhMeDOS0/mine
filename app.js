@@ -1115,30 +1115,27 @@ function renderDashboard() {
         `}
       </article>
     </section>
+  `;
+}
 
-    <section class="grid cols-2" style="margin-top:14px">
-      <article class="panel">
-        <div class="section-head">
-          <div>
-            <h2>${esc(tr("nav.subjects"))}</h2>
-            <p class="muted">${esc(tr("copy.subjectLead"))}</p>
-          </div>
-          <button class="secondary-btn" data-route="subjects" type="button">${esc(tr("buttons.open"))}</button>
-        </div>
-        <div class="grid">
-          ${state.subjects.slice(0, 4).map(subject => {
-            const sg = subjectGrade(subject);
-            return `<div class="resource-row"><div><strong>${esc(loc(subject.name))}</strong><p class="small muted">${esc(subject.code)} · ${sg.earned}/${sg.total}</p></div><span class="chip">${sg.percent}%</span></div>`;
-          }).join("")}
-        </div>
-      </article>
+function renderPlan() {
+  const plan = activePlan();
+  const isAr = lang() === "ar";
+  const tab = state.planTab || "roadmap";
 
-      <article class="panel">
-        ${(() => {
-          const langId = "cpp";
-          const language = state.languages.find(l => l.id === langId);
-          const langName = language ? loc(language.name || language.title) : "C++";
-    </div>
+  return `
+    <section class="panel hero">
+      <div class="section-head">
+        <div>
+          <span class="chip coral">${esc(loc(plan.name))}</span>
+          <h2 style="margin-top:8px">${isAr ? "خطة المذاكرة" : "Study Plan"}</h2>
+        </div>
+        <div class="page-actions">
+          <button class="tab-btn ${tab === 'roadmap' ? 'active' : ''}" data-action="set-plan-tab" data-tab="roadmap" type="button">${isAr ? "خارطة الطريق" : "Daily Roadmap"}</button>
+          ${plan.id === 'finals' ? `<button class="tab-btn ${tab === 'exams' ? 'active' : ''}" data-action="set-plan-tab" data-tab="exams" type="button">${isAr ? "جدول الامتحانات" : "Exam Schedule"}</button>` : ''}
+        </div>
+      </div>
+    </section>
 
     ${tab === 'exams' ? `
       <section class="panel">
@@ -1204,7 +1201,8 @@ function renderDashboard() {
               ${renderTaskList(day.tasks, "day", day.id)}
               ${day.daysPast <= 0 ? taskForm("add-day-task", day.id, isAr ? "أضف مهمة في اليوم" : "Add a task to this day") : ''}
             </article>
-          `).join("");
+          `;
+          }).join("");
         })()}
       </section>
     `}
