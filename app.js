@@ -875,7 +875,13 @@ function applyPreferences() {
   document.getElementById("themeToggle").setAttribute("aria-label", state.settings.theme === "dark" ? "Switch to light mode" : "Switch to dark mode");
   document.getElementById("langToggle").textContent = tr("buttons.lang");
 
-  const dateStr = formatDate(new Date().toISOString().slice(0, 10));
+  const localToday = new Date();
+  const year = localToday.getFullYear();
+  const month = String(localToday.getMonth() + 1).padStart(2, '0');
+  const dayNum = String(localToday.getDate()).padStart(2, '0');
+  const todayId = `${year}-${month}-${dayNum}`;
+
+  const dateStr = formatDate(todayId);
   const throughText = lang() === "ar" ? "إلى نهاية الفاينلز" : "through finals";
   document.getElementById("pageEyebrow").textContent = `${dateStr} ${throughText}`;
 }
@@ -1013,8 +1019,14 @@ function renderDashboard() {
   const cgpa = calculateCgpa();
   const allTasks = allTaskGroups().flatMap(group => group.tasks);
   const cvCount = completedItems().length;
+  const localToday = new Date();
+  const year = localToday.getFullYear();
+  const month = String(localToday.getMonth() + 1).padStart(2, '0');
+  const dateNum = String(localToday.getDate()).padStart(2, '0');
+  const todayId = `${year}-${month}-${dateNum}`;
+
   const planDays = activePlan().days || [];
-  const day = planDays.find(item => item.id === new Date().toISOString().slice(0, 10)) || planDays.find(item => item.tasks.some(task => !task.done)) || planDays[0];
+  const day = planDays.find(item => item.id === todayId) || planDays.find(item => item.tasks.some(task => !task.done)) || planDays[0];
   const grade = subjectGrade(exam);
 
   return `
