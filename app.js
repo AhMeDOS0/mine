@@ -1256,6 +1256,21 @@ function renderSubjects() {
       </div>
       </div>
       ${renderAddSubjectTools()}
+      <details class="import-box" style="margin-top:10px">
+        <summary>${lang() === "ar" ? "\u{1F4D6} \u0631\u0641\u0639 \u062f\u0644\u064a\u0644 JSX \u0644\u0645\u0627\u062f\u0629" : "\u{1F4D6} Upload JSX Guide for Subject"}</summary>
+        <div class="panel inset-panel" style="margin-top:10px">
+          <p class="small muted">${lang() === "ar" ? "\u0627\u0631\u0641\u0639 \u0645\u0644\u0641 .jsx \u0648\u0627\u062e\u062a\u0631 \u0627\u0644\u0645\u0627\u062f\u0629 \u0627\u0644\u0644\u064a \u0639\u0627\u064a\u0632 \u062a\u0631\u0628\u0637\u0647 \u0628\u064a\u0647\u0627. \u0647\u064a\u0638\u0647\u0631 \u0632\u0631\u0627\u0631 Open Guide \u0641\u064a \u0635\u0641\u062d\u0629 \u0627\u0644\u0645\u0627\u062f\u0629." : "Upload a .jsx file and select which subject to link it to. An Open Guide button will appear on that subject page."}</p>
+          <div class="form-grid" style="margin-top:8px">
+            <select id="guideSubjectSelect">
+              ${state.subjects.map(s => '<option value="' + esc(s.id) + '">' + esc(loc(s.name)) + '</option>').join("")}
+            </select>
+            <div class="file-upload-wrap">
+              <div class="file-upload-btn">\u{1F4C4} ${lang() === "ar" ? "\u0627\u062e\u062a\u0631 \u0645\u0644\u0641 .jsx" : "Choose .jsx file"}</div>
+              <input id="guideFileInput" type="file" accept=".jsx,.js,.tsx" aria-label="Upload JSX guide">
+            </div>
+          </div>
+        </div>
+      </details>
     </section>
 
     <section class="subject-grid" style="margin-top:14px">
@@ -1273,6 +1288,10 @@ function renderSubjects() {
               </div>
             </h2>
             <p class="muted" style="margin-top:4px">${esc(selected.code)} · ${esc(tr("labels.exam"))}: ${esc(formatDate(selected.exam.date))} · ${esc(loc(selected.exam.time))}</p>
+          </div>
+          <div class="inline-actions subject-hero-actions">
+            ${selected.guideFile ? `<a class="guide-open-btn" href="guide-viewer.html?guide=${esc(selected.guideFile)}" target="_blank">\u{1F4D6} ${esc(tr("labels.fullGuide"))}</a>` : ''}
+          </div>
         </div>
         <div class="tabs">
           ${tabs.map(item => `<button class="tab-btn ${tab === item ? "active" : ""}" data-action="subject-tab" data-tab="${item}" type="button">${esc(tr(`labels.${item}`))}</button>`).join("")}
@@ -2635,6 +2654,26 @@ document.addEventListener("change", async event => {
       } catch {
         showToast(tr("copy.invalidJson"));
       }
+    };
+    reader.readAsText(file);
+  }
+
+  if (event.target.id === "guideFileInput" && event.target.files[0]) {
+    const file = event.target.files[0];
+    const subjectId = document.getElementById("guideSubjectSelect")?.value;
+    if (!subjectId) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const guideKey = "guide-" + subjectId;
+      const customGuides = JSON.parse(localStorage.getItem("ahmed-custom-guides") || "{}");
+      customGuides[guideKey] = { content: reader.result, title: file.name };
+      localStorage.setItem("ahmed-custom-guides", JSON.stringify(customGuides));
+      const subject = state.subjects.find(s => s.id === subjectId);
+      if (subject) {
+        subject.guideFile = guideKey;
+      }
+      showToast(lang() === "ar" ? "\u062a\u0645 \u0631\u0628\u0637 \u0627\u0644\u062f\u0644\u064a\u0644 \u0628\u0627\u0644\u0645\u0627\u062f\u0629" : "Guide linked to subject");
+      render();
     };
     reader.readAsText(file);
   }
