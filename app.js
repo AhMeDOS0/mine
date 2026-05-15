@@ -2127,7 +2127,7 @@ function render() {
   state.route = route;
   applyPreferences();
   renderNav(route);
-  document.getElementById("pageTitle").textContent = tr(`titles.${route}`);
+  document.getElementById("pageTitle").textContent = route === "plan" ? loc(activePlan().name) : tr(`titles.${route}`);
   const views = { dashboard: renderDashboard, plan: renderPlan, subjects: renderSubjects, code: renderCode, cyber: renderCyber, tools: renderTools, cgpa: renderCgpa, focus: renderFocus, projects: renderProjects, cv: renderCv, history: renderHistory, globalTasks: renderGlobalTasks };
   document.getElementById("app").innerHTML = views[route]();
   saveState();
