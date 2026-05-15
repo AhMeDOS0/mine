@@ -93,7 +93,7 @@ async function confirmAction(message) {
 }
 
 function activePlan() {
-  if (!state.plans) return { id: 'empty', name: {ar: 'خالية', en: 'Empty'}, days: [] };
+  if (!state.plans || state.plans.length === 0) return { id: 'empty', name: {ar: 'خالية', en: 'Empty'}, days: [] };
   return state.plans.find(p => p.id === (state.activePlanId || 'finals')) || state.plans[0];
 }
 
@@ -1137,23 +1137,26 @@ function renderPlan() {
     <section class="panel hero">
       <div class="section-head">
         <div>
-          <span class="chip coral">${esc(loc(plan.name))}</span>
-          <h2 style="margin-top:8px">${isAr ? "خطة المذاكرة" : "Study Plan"}</h2>
+          <h2>${isAr ? "خطة المذاكرة" : "Study Plan"}</h2>
+          <p class="muted">${isAr ? "نظم وقتك ومهامك اليومية" : "Organize your time and daily tasks"}</p>
         </div>
-        <button class="secondary-btn" data-action="create-new-plan" type="button" style="padding: 4px 10px; font-size:13px">+ ${isAr ? "خطة مخصصة" : "Custom Plan"}</button>
+        <button class="secondary-btn" data-action="create-new-plan" type="button" style="padding: 6px 14px; font-size:13px">+ ${isAr ? "خطة مخصصة" : "Custom Plan"}</button>
+      </div>
+
+      <div style="margin-top:16px; display:flex; gap:8px; flex-wrap:wrap">
+        ${state.plans.map(p => `
+          <div class="chip ${p.id === plan.id ? "accent" : "indigo"}" data-action="select-plan" data-id="${p.id}" style="cursor:pointer; display:inline-flex; align-items:center; gap:8px; padding: 6px 14px; font-size:13px">
+            ${esc(loc(p.name))}
+            <button class="delete-btn" data-action="delete-plan" data-id="${p.id}" type="button" style="background:transparent; border:none; color:var(--red); font-weight:bold; cursor:pointer; padding: 0; font-size:1.2em; line-height: 1;" onclick="event.stopPropagation()">×</button>
+          </div>
+        `).join("")}
+      </div>
+
+      <div class="tabs" style="margin-top:20px">
         <button class="tab-btn ${tab === 'roadmap' ? 'active' : ''}" data-action="set-plan-tab" data-tab="roadmap" type="button">${isAr ? "خارطة الطريق" : "Daily Roadmap"}</button>
         ${plan.id === 'finals' ? `<button class="tab-btn ${tab === 'exams' ? 'active' : ''}" data-action="set-plan-tab" data-tab="exams" type="button">${isAr ? "جدول الامتحانات" : "Exam Schedule"}</button>` : ''}
       </div>
-    </div>
-    <div class="tabs" style="margin-top:14px; border-top: 1px solid var(--line); padding-top:12px">
-      ${state.plans.map(p => `
-        <div class="chip ${p.id === plan.id ? "accent" : "indigo"}" data-action="set-active-plan" data-id="${p.id}" style="cursor:pointer; display:inline-flex; align-items:center; gap:8px; padding: 4px 12px; font-size:13px">
-          ${esc(loc(p.name))}
-          ${p.id !== 'finals' ? `<span data-action="delete-plan" data-id="${p.id}" style="color:var(--red); font-weight:bold; cursor:pointer; padding: 0 4px; font-size:1.2em">×</span>` : ''}
-        </div>
-      `).join("")}
-    </div>
-  </section>
+    </section>
 
     ${tab === 'exams' ? `
       <section class="panel">
@@ -1169,7 +1172,7 @@ function renderPlan() {
             <div class="timeline-row">
               <div class="date-box">${esc(formatDate(subject.exam.date))}<br><span class="small">${esc(loc(subject.exam.time))}</span></div>
               <div>
-                <h3>${esc(loc(subject.name))}</h3>
+                <h3>${esc(loc(subject.name))} <span class="chip accent" style="font-size:11px;vertical-align:middle;margin-inline-start:6px">${esc(subject.targetGrade)}</span></h3>
                 <p class="muted">${esc(tr("labels.target"))}: ${esc(subject.targetGrade)} · ${daysLeft(subject.exam.date)} ${esc(tr("labels.daysLeft"))}</p>
                 <p>${esc(loc(subject.strategy))}</p>
               </div>
@@ -1178,9 +1181,20 @@ function renderPlan() {
         </div>
       </section>
     ` : `
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-        <h2 style="margin:0">${esc(loc(plan.name))} - ${isAr ? "الخطة اليومية" : "Daily Roadmap"}</h2>
-        <button class="primary-btn" data-action="add-new-day" style="padding: 8px 16px;">+ ${isAr ? "إضافة يوم جديد" : "Add New Day"}</button>
+
+      <div class="panel" style="margin-bottom:16px;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 8%,var(--surface)),var(--surface))">
+        <h3 style="margin-bottom:10px">${isAr ? "إضافة يوم جديد" : "Add New Day"}</h3>
+        <form data-form="add-day-inline" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+          <div style="flex:1;min-width:160px">
+            <label class="small muted" style="display:block;margin-bottom:4px">Date</label>
+            <input name="dayDate" type="date" value="${new Date().toISOString().slice(0,10)}" required style="width:100%">
+          </div>
+          <div style="flex:2;min-width:200px">
+            <label class="small muted" style="display:block;margin-bottom:4px">Title / Focus</label>
+            <input name="dayTitle" placeholder="e.g. Study Advanced" required style="width:100%">
+          </div>
+          <button class="primary-btn" type="submit" style="min-height:40px;padding:8px 20px">+ Add Day</button>
+        </form>
       </div>
 
       <section class="grid cols-2">
@@ -1206,10 +1220,10 @@ function renderPlan() {
             <article class="panel ${day.daysPast > 0 ? "past-due-panel" : ""} ${allDone ? "all-done-panel" : ""}">
               <div class="section-head">
                 <div>
-                  <span class="chip ${allDone ? "finished" : (day.daysPast > 0 ? "amber" : "indigo")}" style="${allDone ? "text-decoration: line-through; opacity: 0.7;" : ""}">
+                  <span class="chip ${allDone ? "finished" : (day.daysPast > 0 ? "amber" : "indigo")}" style="${(day.daysPast > 0 || allDone) ? "text-decoration: line-through; opacity: 0.7;" : ""}">
                     ${esc(loc(day.date))}
                   </span>
-                  <h3 style="margin-top:8px">${esc(loc(day.title))}</h3>
+                  <h3 style="margin-top:8px;${day.daysPast > 0 && !allDone ? 'color:var(--amber)' : ''}${allDone ? 'color:var(--green)' : ''}">${esc(loc(day.title))}</h3>
                 </div>
                 <div style="display:flex; align-items:center; gap:8px">
                   <span class="chip">${taskCompletion(day.tasks)}%</span>
@@ -1230,7 +1244,7 @@ function renderPlan() {
 function renderSubjects() {
   const selected = state.subjects.find(subject => subject.id === state.activeSubjectId) || state.subjects[0];
   const tab = state.activeSubjectTab || "overview";
-  const tabs = ["overview", "guide", "lectures", "sheets", "grades", "tasks"];
+  const tabs = ["overview", "lectures", "grades", "tasks"];
 
   return `
     <section class="panel hero">
@@ -1239,6 +1253,7 @@ function renderSubjects() {
           <h2>${esc(tr("titles.subjects"))}</h2>
           <p class="muted">${esc(tr("copy.subjectLead"))}</p>
         </div>
+      </div>
       </div>
       ${renderAddSubjectTools()}
       <details class="import-box" style="margin-top:10px">
@@ -1265,7 +1280,7 @@ function renderSubjects() {
       <article class="panel">
         <div class="section-head">
           <div>
-            <h2>${esc(loc(selected.name))}</h2>
+            <h2>${esc(loc(selected.name))} <span class="chip accent" style="margin-inline-start:10px;vertical-align:middle;font-size:13px">${esc(tr("labels.target"))}: ${esc(selected.targetGrade)}</span></h2>
             <p class="muted">${esc(selected.code)} · ${esc(tr("labels.exam"))}: ${esc(formatDate(selected.exam.date))} · ${esc(loc(selected.exam.time))}</p>
           </div>
           <div class="inline-actions subject-hero-actions">
@@ -1278,6 +1293,7 @@ function renderSubjects() {
         </div>
         <div class="tabs">
           ${tabs.map(item => `<button class="tab-btn ${tab === item ? "active" : ""}" data-action="subject-tab" data-tab="${item}" type="button">${esc(tr(`labels.${item}`))}</button>`).join("")}
+          ${selected.guideFile ? '' : `<button class="tab-btn ${tab === 'guide' ? "active" : ""}" data-action="subject-tab" data-tab="guide" type="button">${esc(tr("labels.guide")) || 'Guide'}</button>`}
         </div>
         ${renderSubjectTab(selected, tab)}
       </article>
@@ -1292,7 +1308,7 @@ function renderSubjectCard(subject, activeId) {
     <div class="subject-card ${subject.tone || ""} ${subject.id === activeId ? "active" : ""}" data-action="select-subject" data-id="${esc(subject.id)}" role="button" tabindex="0">
       <div class="section-head">
         <div>
-          <h3>${esc(loc(subject.name))}</h3>
+          <h3>${esc(loc(subject.name))} <span class="chip accent" style="font-size:11px;vertical-align:middle;margin-inline-start:6px">${esc(subject.targetGrade)}</span></h3>
           <p class="small muted">${esc(subject.code)} · ${esc(tr("labels.hours"))}: ${esc(subject.hours)}</p>
         </div>
         <span class="chip">${sg.percent}%</span>
@@ -1311,8 +1327,7 @@ function renderSubjectCard(subject, activeId) {
 }
 
 function renderSubjectTab(subject, tab) {
-  if (tab === "lectures") return renderModuleList(subject, "lecture");
-  if (tab === "sheets") return renderModuleList(subject, "sheet");
+  if (tab === "lectures") return renderAllModules(subject);
   if (tab === "guide") return renderSubjectGuide(subject);
   if (tab === "grades") return renderSubjectGrades(subject);
   if (tab === "tasks") return `
@@ -1342,74 +1357,41 @@ function renderSubjectTab(subject, tab) {
   `;
 }
 
-function renderSubjectGuide(subject) {
-  const lectureCount = subject.modules.filter(item => item.type === "lecture").length;
-  const extraCount = subject.modules.filter(item => item.type !== "lecture").length;
+function renderAllModules(subject) {
+  const isAr = lang() === "ar";
+  const lectures = subject.modules.filter(m => m.type === "lecture");
+  const sheets = subject.modules.filter(m => m.type !== "lecture");
   return `
-    <section class="guide-page">
-      <div class="guide-banner">
-        <div>
-          <span class="chip accent">${esc(tr("labels.fullGuide"))}</span>
-          <h2>${esc(loc(subject.name))}</h2>
-          <p>${esc(loc(subject.summary))}</p>
+    <details class="import-box" style="margin-bottom:14px">
+      <summary style="font-size:15px">+ ${isAr ? "\u0625\u0636\u0627\u0641\u0629 \u0645\u062d\u0627\u0636\u0631\u0629 \u062c\u062f\u064a\u062f\u0629" : "Add New Lecture"}</summary>
+      <form data-form="add-lecture" data-subject="${esc(subject.id)}" style="margin-top:12px">
+        <div class="form-grid" style="grid-template-columns:80px 1fr;gap:10px">
+          <label style="font-size:13px;font-weight:700;color:var(--muted)">#</label>
+          <input name="lecNum" type="number" min="0" placeholder="7" required style="max-width:120px">
+          <label style="font-size:13px;font-weight:700;color:var(--muted)">${isAr ? "\u0627\u0644\u0639\u0646\u0648\u0627\u0646" : "Title"}</label>
+          <input name="lecTitle" placeholder="${isAr ? '\u0639\u0646\u0648\u0627\u0646 \u0627\u0644\u0645\u062d\u0627\u0636\u0631\u0629' : 'Lecture title'}" required>
+          <label style="font-size:13px;font-weight:700;color:var(--muted)">${isAr ? "\u0645\u0644\u062e\u0635" : "Summary"}</label>
+          <input name="lecSummary" placeholder="${isAr ? '\u0645\u0644\u062e\u0635 \u0642\u0635\u064a\u0631' : 'Brief summary'}">
+          <label style="font-size:13px;font-weight:700;color:var(--muted)">${isAr ? "\u0635\u0641\u062d\u0627\u062a" : "Pages"}</label>
+          <input name="lecPages" type="number" min="1" value="1" style="max-width:120px">
         </div>
-        <div class="guide-stats">
-          ${renderMetric(lectureCount, tr("labels.lectures"))}
-          ${renderMetric(extraCount, tr("labels.sheets"))}
-          ${renderMetric(subjectGrade(subject).percent + "%", tr("labels.currentGrade"))}
+        <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
+          <button class="primary-btn" type="submit" style="padding:8px 20px">${isAr ? "\u0623\u0636\u0641" : "Add Lecture"}</button>
+          <div class="file-upload-wrap"><div class="file-upload-btn">\u{1F4CE} PDF</div><input type="file" accept=".pdf" name="lecPdf" class="add-lec-pdf-input"></div>
         </div>
-      </div>
-
-      <div class="callout guide-core">
-        <strong>${esc(tr("labels.coreConcept"))}</strong>
-        <p>${esc(loc(subject.strategy))}</p>
-      </div>
-
-      <h3>${esc(tr("labels.fileMap"))}</h3>
-      <div class="guide-timeline">
-        ${subject.modules.map((item, index) => `
-          <article class="guide-step">
-            <div class="guide-step-num">${index + 1}</div>
-            <div>
-              <div class="section-head">
-                <div>
-                  <span class="chip ${item.type === "lecture" ? "accent" : "amber"}">${esc(item.type)}</span>
-                  <h3>${esc(loc(item.title))}</h3>
-                </div>
-                <span class="chip">${esc(item.pages)}p</span>
-              </div>
-              <p class="small muted">${esc(item.file || "")}</p>
-              <div class="guide-columns">
-                <div>
-                  <h4>${esc(tr("labels.outcomes"))}</h4>
-                  <ul>${(item.topics || []).map(topic => `<li>${esc(loc(topic))}</li>`).join("")}</ul>
-                </div>
-                <div>
-                  <h4>${esc(tr("labels.practice"))}</h4>
-                  ${(item.practice || []).length
-                    ? `<ul>${item.practice.map(practice => `<li>${esc(loc(practice))}</li>`).join("")}</ul>`
-                    : `<p class="muted small">${lang() === "ar" ? "راجع الملف وحوّله لأسئلة قصيرة." : "Review the file and convert it into short questions."}</p>`}
-                </div>
-              </div>
-            </div>
-          </article>
-        `).join("")}
-      </div>
-    </section>
+      </form>
+    </details>
+    <h3 style="margin-bottom:10px">${isAr ? "\u0627\u0644\u0645\u062d\u0627\u0636\u0631\u0627\u062a" : "Lectures"} (${lectures.length})</h3>
+    <div class="module-grid">${lectures.map(item => renderModuleCard(item, subject.id)).join("")}</div>
+    ${sheets.length ? `<h3 style="margin-top:20px;margin-bottom:10px">${isAr ? "\u0627\u0644\u0634\u064a\u062a\u0627\u062a \u0648\u0627\u0644\u0644\u0627\u0628\u0627\u062a" : "Sheets & Labs"} (${sheets.length})</h3><div class="module-grid">${sheets.map(item => renderModuleCard(item, subject.id)).join("")}</div>` : ""}
   `;
 }
 
-function renderModuleList(subject, type) {
-  const modules = type === "sheet"
-    ? subject.modules.filter(item => item.type !== "lecture")
-    : subject.modules.filter(item => item.type === "lecture");
-  const fallback = type === "sheet" ? subject.modules.filter(item => item.practice?.length) : modules;
-  const list = modules.length ? modules : fallback;
-  return `<div class="module-grid">${list.map(renderModuleCard).join("")}</div>`;
-}
-
-function renderModuleCard(item) {
+function renderModuleCard(item, subjectId) {
   const hasPdf = item.pdfData || item.pdfName;
+  const isAr = lang() === "ar";
+  const sections = item.sections || [];
+  const sid = subjectId || "";
   return `
     <article class="module-card">
       <div class="section-head">
@@ -1417,20 +1399,27 @@ function renderModuleCard(item) {
           <span class="chip ${item.type === "lecture" ? "accent" : "amber"}">${esc(item.type)}</span>
           <h3 style="margin-top:8px">${esc(loc(item.title))}</h3>
         </div>
-        <span class="chip">${esc(item.pages)}p</span>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span class="chip">${esc(item.pages)}p</span>
+          <button class="secondary-btn" data-action="edit-module" data-subject="${esc(sid)}" data-module="${esc(item.id)}" type="button" style="padding:4px 8px;font-size:11px;min-height:26px" title="Edit">&#9998;</button>
+          <button class="delete-btn" data-action="delete-module" data-subject="${esc(sid)}" data-module="${esc(item.id)}" type="button" style="width:26px;height:26px;font-size:11px">x</button>
+        </div>
       </div>
       <p class="small muted">${esc(item.file || "")}</p>
-      ${hasPdf ? `<a class="pdf-badge" ${item.pdfData ? 'href="' + item.pdfData + '" target="_blank"' : ''}>📄 ${esc(item.pdfName || "PDF")}</a>` : ""}
+      ${hasPdf ? `<a class="pdf-badge" ${item.pdfData ? 'href="' + item.pdfData + '" target="_blank"' : ''}>\u{1F4C4} ${esc(item.pdfName || "PDF")}</a>` : ""}
       <div class="file-upload-wrap" style="margin:8px 0">
-        <div class="file-upload-btn">📎 ${lang() === "ar" ? "رفع PDF" : "Upload PDF"}</div>
+        <div class="file-upload-btn">\u{1F4CE} ${isAr ? "\u0631\u0641\u0639 PDF" : "Upload PDF"}</div>
         <input type="file" accept=".pdf" data-action="upload-module-pdf" data-module="${esc(item.id)}">
       </div>
       <h4>${esc(tr("labels.outcomes"))}</h4>
       <ul>${(item.topics || []).map(topic => `<li>${esc(loc(topic))}</li>`).join("")}</ul>
-      ${(item.practice || []).length ? `<h4>${esc(tr("labels.practice"))}</h4><ul>${item.practice.map(practice => `<li>${esc(loc(practice))}</li>`).join("")}</ul>` : ""}
+      ${(item.practice || []).length ? `<h4>${esc(tr("labels.practice"))}</h4><ul>${item.practice.map(p => `<li>${esc(loc(p))}</li>`).join("")}</ul>` : ""}
+      ${sections.length ? `<div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--line)"><h4 style="color:var(--accent);font-size:13px">${isAr ? "\u0627\u0644\u0623\u0642\u0633\u0627\u0645" : "Sections"}</h4>${sections.map((sec, si) => `<div style="margin:6px 0;padding:8px;border-radius:var(--radius);background:var(--surface-2);display:flex;align-items:center;justify-content:space-between;gap:8px"><div style="flex:1"><strong style="font-size:13px">${esc(loc(sec.title))}</strong>${sec.pdfName ? ` <a class="pdf-badge" style="font-size:10px" ${sec.pdfData ? 'href="' + sec.pdfData + '" target="_blank"' : ''}>\u{1F4C4} ${esc(sec.pdfName)}</a>` : ""}</div><button class="delete-btn" data-action="delete-section" data-subject="${esc(sid)}" data-module="${esc(item.id)}" data-index="${si}" type="button" style="width:22px;height:22px;font-size:10px">x</button></div>`).join("")}</div>` : ""}
+      <details style="margin-top:8px"><summary class="small" style="cursor:pointer;color:var(--accent);font-weight:700">+ ${isAr ? "\u0625\u0636\u0627\u0641\u0629 \u0642\u0633\u0645" : "Add Section"}</summary><form data-form="add-section" data-subject="${esc(sid)}" data-module="${esc(item.id)}" style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center"><input name="secTitle" placeholder="${isAr ? '\u0627\u0633\u0645 \u0627\u0644\u0642\u0633\u0645' : 'Section name'}" required style="flex:1;min-width:140px;min-height:32px;padding:4px 8px;font-size:12px"><div class="file-upload-wrap"><div class="file-upload-btn" style="min-height:32px;padding:4px 10px;font-size:11px">\u{1F4CE} PDF</div><input type="file" accept=".pdf" name="secPdf" class="sec-pdf-input"></div><button class="secondary-btn" type="submit" style="min-height:32px;padding:4px 10px;font-size:12px">${isAr ? "\u0623\u0636\u0641" : "Add"}</button></form></details>
     </article>
   `;
 }
+
 
 function renderSubjectGrades(subject) {
   const sg = subjectGrade(subject);
@@ -2370,6 +2359,7 @@ document.addEventListener("click", async event => {
       days: []
     });
     state.activePlanId = id;
+    if (id !== 'finals') state.planTab = 'roadmap';
     saveState();
     render();
   }
@@ -2378,7 +2368,7 @@ document.addEventListener("click", async event => {
     if (await confirmAction(lang() === "ar" ? "هل أنت متأكد من حذف هذه الخطة بالكامل؟" : "Are you sure you want to delete this entire plan?")) {
       state.plans = state.plans.filter(p => p.id !== actionEl.dataset.id);
       if (state.activePlanId === actionEl.dataset.id) {
-        state.activePlanId = state.plans[0].id;
+        state.activePlanId = state.plans.length > 0 ? state.plans[0].id : null;
       }
       saveState();
       render();
@@ -2419,7 +2409,42 @@ document.addEventListener("click", async event => {
     }
   }
 
-  if (action === "timer-start" && !timerInterval) {
+  if (action === "edit-module") {
+    const subject = state.subjects.find(s => s.id === actionEl.dataset.subject);
+    if (!subject) return;
+    const mod = subject.modules.find(m => m.id === actionEl.dataset.module);
+    if (!mod) return;
+    const newTitle = await ask(lang() === "ar" ? "عنوان جديد:" : "New title:", loc(mod.title));
+    if (!newTitle) return;
+    mod.title = txt(newTitle, newTitle);
+    const newPages = await ask(lang() === "ar" ? "عدد الصفحات:" : "Number of pages:", String(mod.pages));
+    if (newPages) mod.pages = Number(newPages) || mod.pages;
+    saveState();
+    render();
+  }
+
+  if (action === "delete-module") {
+    const subject = state.subjects.find(s => s.id === actionEl.dataset.subject);
+    if (!subject) return;
+    if (await confirmAction(lang() === "ar" ? "حذف هذا المحتوى؟" : "Delete this content?")) {
+      subject.modules = subject.modules.filter(m => m.id !== actionEl.dataset.module);
+      saveState();
+      render();
+    }
+  }
+
+  if (action === "delete-section") {
+    const subject = state.subjects.find(s => s.id === actionEl.dataset.subject);
+    if (!subject) return;
+    const mod = subject.modules.find(m => m.id === actionEl.dataset.module);
+    if (!mod || !mod.sections) return;
+    const idx = parseInt(actionEl.dataset.index);
+    mod.sections.splice(idx, 1);
+    saveState();
+    render();
+  }
+
+    if (action === "timer-start" && !timerInterval) {
     timerInterval = window.setInterval(() => {
       state.focusSeconds = Math.max(0, state.focusSeconds - 1);
       const timerText = document.getElementById("timerText");
@@ -2677,7 +2702,48 @@ document.addEventListener("submit", async event => {
     return;
   }
 
-  if (type === "add-grade") {
+  if (type === "add-day-inline") {
+    const dateStr = String(data.get("dayDate") || "").trim();
+    const title = String(data.get("dayTitle") || "").trim();
+    if (!dateStr || !title) return;
+    const plan = activePlan();
+    if (plan.days.find(d => d.id === dateStr)) { showToast("This day already exists!"); form.reset(); render(); return; }
+    plan.days.push({ id: dateStr, date: { ar: dateStr, en: dateStr }, title: { ar: title, en: title }, tasks: [] });
+    plan.days.sort((a, b) => new Date(a.id) - new Date(b.id));
+    saveState(); form.reset(); render(); return;
+  }
+
+  if (type === "add-lecture") {
+    const subject = state.subjects.find(s => s.id === form.dataset.subject);
+    if (subject) {
+      const num = String(data.get("lecNum") || "0");
+      const title = String(data.get("lecTitle") || "").trim();
+      const summary = String(data.get("lecSummary") || "").trim();
+      const pages = Number(data.get("lecPages") || 1);
+      const pdfInput = form.querySelector(".add-lec-pdf-input");
+      const newMod = { id: uid("lec"), type: "lecture", title: txt("Lec " + num + " - " + title, "Lec " + num + " - " + title), file: "", pages: pages, topics: summary ? [txt(summary, summary)] : [], practice: [], sections: [] };
+      if (pdfInput && pdfInput.files && pdfInput.files[0]) { newMod.pdfName = pdfInput.files[0].name; newMod.pdfData = URL.createObjectURL(pdfInput.files[0]); }
+      subject.modules.push(newMod);
+      state.activeSubjectTab = "lectures";
+    }
+  }
+
+  if (type === "add-section") {
+    const subject = state.subjects.find(s => s.id === form.dataset.subject);
+    if (subject) {
+      const mod = subject.modules.find(m => m.id === form.dataset.module);
+      if (mod) {
+        if (!mod.sections) mod.sections = [];
+        const secTitle = String(data.get("secTitle") || "").trim();
+        const sec = { title: txt(secTitle, secTitle) };
+        const pdfInput = form.querySelector(".sec-pdf-input");
+        if (pdfInput && pdfInput.files && pdfInput.files[0]) { sec.pdfName = pdfInput.files[0].name; sec.pdfData = URL.createObjectURL(pdfInput.files[0]); }
+        mod.sections.push(sec);
+      }
+    }
+  }
+
+    if (type === "add-grade") {
     const subject = state.subjects.find(item => item.id === form.dataset.subject);
     subject.gradeItems.push(grade(uid("grade"), String(data.get("label")), String(data.get("label")), Number(data.get("earned")), Number(data.get("total"))));
   }
