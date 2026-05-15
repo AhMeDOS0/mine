@@ -1137,8 +1137,8 @@ function renderPlan() {
     <section class="panel hero">
       <div class="section-head">
         <div>
-          <h2>${isAr ? "خطة المذاكرة" : "Study Plan"}</h2>
-          <p class="muted">${isAr ? "نظم وقتك ومهامك اليومية" : "Organize your time and daily tasks"}</p>
+          <h2>${plan.id !== 'empty' ? esc(loc(plan.name)) : (isAr ? "خطة المذاكرة" : "Study Plan")}</h2>
+          <p class="muted">${(plan.desc && loc(plan.desc)) ? esc(loc(plan.desc)) : (isAr ? "نظم وقتك ومهامك اليومية" : "Organize your time and daily tasks")}</p>
         </div>
         <button class="secondary-btn" data-action="create-new-plan" type="button" style="padding: 6px 14px; font-size:13px">+ ${isAr ? "خطة مخصصة" : "Custom Plan"}</button>
       </div>
@@ -1147,7 +1147,7 @@ function renderPlan() {
         ${state.plans.map(p => `
           <div class="chip ${p.id === plan.id ? "accent" : "indigo"}" data-action="select-plan" data-id="${p.id}" style="cursor:pointer; display:inline-flex; align-items:center; gap:8px; padding: 6px 14px; font-size:13px">
             ${esc(loc(p.name))}
-            <button class="delete-btn" data-action="delete-plan" data-id="${p.id}" type="button" style="background:transparent; border:none; color:var(--red); font-weight:bold; cursor:pointer; padding: 0; font-size:1.2em; line-height: 1;" onclick="event.stopPropagation()">×</button>
+            ${p.id !== 'finals' ? `<button class="delete-btn" data-action="delete-plan" data-id="${p.id}" type="button" style="background:transparent; border:none; color:var(--red); font-weight:bold; cursor:pointer; padding: 0; font-size:1.2em; line-height: 1;" aria-label="Delete Plan">×</button>` : ''}
           </div>
         `).join("")}
       </div>
@@ -1256,21 +1256,6 @@ function renderSubjects() {
       </div>
       </div>
       ${renderAddSubjectTools()}
-      <details class="import-box" style="margin-top:10px">
-        <summary>${lang() === "ar" ? "\u{1F4D6} \u0631\u0641\u0639 \u062f\u0644\u064a\u0644 JSX \u0644\u0645\u0627\u062f\u0629" : "\u{1F4D6} Upload JSX Guide for Subject"}</summary>
-        <div class="panel inset-panel" style="margin-top:10px">
-          <p class="small muted">${lang() === "ar" ? "\u0627\u0631\u0641\u0639 \u0645\u0644\u0641 .jsx \u0648\u0627\u062e\u062a\u0631 \u0627\u0644\u0645\u0627\u062f\u0629 \u0627\u0644\u0644\u064a \u0639\u0627\u064a\u0632 \u062a\u0631\u0628\u0637\u0647 \u0628\u064a\u0647\u0627. \u0647\u064a\u0638\u0647\u0631 \u0632\u0631\u0627\u0631 Open Guide \u0641\u064a \u0635\u0641\u062d\u0629 \u0627\u0644\u0645\u0627\u062f\u0629." : "Upload a .jsx file and select which subject to link it to. An Open Guide button will appear on that subject page."}</p>
-          <div class="form-grid" style="margin-top:8px">
-            <select id="guideSubjectSelect">
-              ${state.subjects.map(s => '<option value="' + esc(s.id) + '">' + esc(loc(s.name)) + '</option>').join("")}
-            </select>
-            <div class="file-upload-wrap">
-              <div class="file-upload-btn">\u{1F4C4} ${lang() === "ar" ? "\u0627\u062e\u062a\u0631 \u0645\u0644\u0641 .jsx" : "Choose .jsx file"}</div>
-              <input id="guideFileInput" type="file" accept=".jsx,.js,.tsx" aria-label="Upload JSX guide">
-            </div>
-          </div>
-        </div>
-      </details>
     </section>
 
     <section class="subject-grid" style="margin-top:14px">
@@ -1280,20 +1265,17 @@ function renderSubjects() {
       <article class="panel">
         <div class="section-head">
           <div>
-            <h2>${esc(loc(selected.name))} <span class="chip accent" style="margin-inline-start:10px;vertical-align:middle;font-size:13px">${esc(tr("labels.target"))}: ${esc(selected.targetGrade)}</span></h2>
-            <p class="muted">${esc(selected.code)} · ${esc(tr("labels.exam"))}: ${esc(formatDate(selected.exam.date))} · ${esc(loc(selected.exam.time))}</p>
-          </div>
-          <div class="inline-actions subject-hero-actions">
-            ${selected.guideFile ? `<a class="guide-open-btn" href="guide-viewer.html?guide=${esc(selected.guideFile)}" target="_blank">\u{1F4D6} ${esc(tr("labels.fullGuide"))}</a>` : `<button class="primary-btn" data-action="subject-tab" data-tab="guide" type="button">${esc(tr("labels.fullGuide"))}</button>`}
-            <div class="target-wrap" style="display:flex;align-items:center;background:var(--bg-card);padding:2px 8px;border-radius:6px;border:1px solid var(--border-color);">
-              <span class="small muted" style="${lang() === 'ar' ? 'margin-left:8px' : 'margin-right:8px'}">${esc(tr("labels.target"))}</span>
-              <select class="target-select" data-action="change-target" data-id="${esc(selected.id)}" style="background:transparent;border:none;padding:0">${Object.keys(gradePoints).map(g => `<option value="${g}" ${selected.targetGrade === g ? "selected" : ""}>${g}</option>`).join("")}</select>
-            </div>
-          </div>
+            <h2 style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              ${esc(loc(selected.name))}
+              <div class="target-wrap" style="display:flex;align-items:center;background:var(--bg-card);padding:2px 8px;border-radius:6px;border:1px solid var(--border-color);font-size:14px;font-weight:normal">
+                <span class="small muted" style="${lang() === 'ar' ? 'margin-left:6px' : 'margin-right:6px'}">${esc(tr("labels.target"))}</span>
+                <select class="target-select" data-action="change-target" data-id="${esc(selected.id)}" style="background:transparent;border:none;padding:0;font-weight:bold;color:var(--accent)">${Object.keys(gradePoints).map(g => `<option value="${g}" ${selected.targetGrade === g ? "selected" : ""}>${g}</option>`).join("")}</select>
+              </div>
+            </h2>
+            <p class="muted" style="margin-top:4px">${esc(selected.code)} · ${esc(tr("labels.exam"))}: ${esc(formatDate(selected.exam.date))} · ${esc(loc(selected.exam.time))}</p>
         </div>
         <div class="tabs">
           ${tabs.map(item => `<button class="tab-btn ${tab === item ? "active" : ""}" data-action="subject-tab" data-tab="${item}" type="button">${esc(tr(`labels.${item}`))}</button>`).join("")}
-          ${selected.guideFile ? '' : `<button class="tab-btn ${tab === 'guide' ? "active" : ""}" data-action="subject-tab" data-tab="guide" type="button">${esc(tr("labels.guide")) || 'Guide'}</button>`}
         </div>
         ${renderSubjectTab(selected, tab)}
       </article>
@@ -1328,7 +1310,6 @@ function renderSubjectCard(subject, activeId) {
 
 function renderSubjectTab(subject, tab) {
   if (tab === "lectures") return renderAllModules(subject);
-  if (tab === "guide") return renderSubjectGuide(subject);
   if (tab === "grades") return renderSubjectGrades(subject);
   if (tab === "tasks") return `
     ${renderTaskList(subject.tasks, "subject", subject.id)}
@@ -2352,10 +2333,12 @@ document.addEventListener("click", async event => {
   if (action === "create-new-plan") {
     const name = await ask(lang() === "ar" ? "اسم الخطة الجديدة:" : "New Plan Name:");
     if (!name) return;
+    const desc = await ask(lang() === "ar" ? "اكتب وصف قصير للخطة (اختياري):" : "Write a short description for the plan (optional):");
     const id = "plan-" + Date.now();
     state.plans.push({
       id: id,
       name: { ar: name, en: name },
+      desc: { ar: desc || "", en: desc || "" },
       days: []
     });
     state.activePlanId = id;
@@ -2656,25 +2639,6 @@ document.addEventListener("change", async event => {
     reader.readAsText(file);
   }
 
-  if (event.target.id === "guideFileInput" && event.target.files[0]) {
-    const file = event.target.files[0];
-    const subjectId = document.getElementById("guideSubjectSelect")?.value;
-    if (!subjectId) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const guideKey = "guide-" + subjectId;
-      const customGuides = JSON.parse(localStorage.getItem("ahmed-custom-guides") || "{}");
-      customGuides[guideKey] = { content: reader.result, title: file.name };
-      localStorage.setItem("ahmed-custom-guides", JSON.stringify(customGuides));
-      const subject = state.subjects.find(s => s.id === subjectId);
-      if (subject) {
-        subject.guideFile = guideKey;
-      }
-      showToast(lang() === "ar" ? "\u062a\u0645 \u0631\u0628\u0637 \u0627\u0644\u062f\u0644\u064a\u0644 \u0628\u0627\u0644\u0645\u0627\u062f\u0629" : "Guide linked to subject");
-      render();
-    };
-    reader.readAsText(file);
-  }
 });
 
 document.addEventListener("submit", async event => {
