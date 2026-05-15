@@ -1275,8 +1275,9 @@ function renderSubjects() {
 
     <section class="subject-grid" style="margin-top:14px">
       <aside class="subject-list" aria-label="${esc(tr("labels.allSubjects"))}">
-        ${state.subjects.map(subject => renderSubjectCard(subject, selected.id)).join("")}
+        ${state.subjects.map(subject => renderSubjectCard(subject, selected?.id)).join("")}
       </aside>
+      ${selected ? `
       <article class="panel">
         <div class="section-head">
           <div>
@@ -1298,6 +1299,12 @@ function renderSubjects() {
         </div>
         ${renderSubjectTab(selected, tab)}
       </article>
+      ` : `
+      <article class="panel" style="text-align:center;padding:40px;">
+        <h3>${lang() === 'ar' ? 'لا توجد مواد' : 'No Subjects Found'}</h3>
+        <p class="muted">${lang() === 'ar' ? 'أضف مادة جديدة للبدء.' : 'Add a new subject to get started.'}</p>
+      </article>
+      `}
     </section>
   `;
 }
@@ -1371,7 +1378,7 @@ function renderAllModules(subject) {
           <label style="font-size:13px;font-weight:700;color:var(--muted)">${isAr ? "\u0627\u0644\u0639\u0646\u0648\u0627\u0646" : "Title"}</label>
           <input name="lecTitle" placeholder="${isAr ? '\u0639\u0646\u0648\u0627\u0646 \u0627\u0644\u0645\u062d\u0627\u0636\u0631\u0629' : 'Lecture title'}" required>
           <label style="font-size:13px;font-weight:700;color:var(--muted)">${isAr ? "\u0645\u0644\u062e\u0635" : "Summary"}</label>
-          <input name="lecSummary" placeholder="${isAr ? '\u0645\u0644\u062e\u0635 \u0642\u0635\u064a\u0631' : 'Brief summary'}">
+          <textarea name="lecSummary" placeholder="${isAr ? '\u0645\u0644\u062e\u0635 \u0642\u0635\u064a\u0631' : 'Brief summary'}" rows="3" style="resize:vertical;font-family:inherit;font-size:inherit;padding:8px;border-radius:var(--radius);border:1px solid var(--line);background:var(--surface);color:var(--ink)"></textarea>
           <label style="font-size:13px;font-weight:700;color:var(--muted)">${isAr ? "\u0635\u0641\u062d\u0627\u062a" : "Pages"}</label>
           <input name="lecPages" type="number" min="1" value="1" style="max-width:120px">
         </div>
@@ -1412,7 +1419,7 @@ function renderModuleCard(item, subjectId) {
         <input type="file" accept=".pdf" data-action="upload-module-pdf" data-module="${esc(item.id)}">
       </div>
       <h4>${esc(tr("labels.outcomes"))}</h4>
-      <ul>${(item.topics || []).map(topic => `<li>${esc(loc(topic))}</li>`).join("")}</ul>
+      <ul>${(item.topics || []).map(topic => `<li style="white-space: pre-wrap; margin-bottom: 6px;">${esc(loc(topic))}</li>`).join("")}</ul>
       ${(item.practice || []).length ? `<h4>${esc(tr("labels.practice"))}</h4><ul>${item.practice.map(p => `<li>${esc(loc(p))}</li>`).join("")}</ul>` : ""}
       ${sections.length ? `<div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--line)"><h4 style="color:var(--accent);font-size:13px">${isAr ? "\u0627\u0644\u0623\u0642\u0633\u0627\u0645" : "Sections"}</h4>${sections.map((sec, si) => `<div style="margin:6px 0;padding:8px;border-radius:var(--radius);background:var(--surface-2);display:flex;align-items:center;justify-content:space-between;gap:8px"><div style="flex:1"><strong style="font-size:13px">${esc(loc(sec.title))}</strong>${sec.pdfName ? ` <a class="pdf-badge" style="font-size:10px" ${sec.pdfData ? 'href="' + sec.pdfData + '" target="_blank"' : ''}>\u{1F4C4} ${esc(sec.pdfName)}</a>` : ""}</div><button class="delete-btn" data-action="delete-section" data-subject="${esc(sid)}" data-module="${esc(item.id)}" data-index="${si}" type="button" style="width:22px;height:22px;font-size:10px">x</button></div>`).join("")}</div>` : ""}
       <details style="margin-top:8px"><summary class="small" style="cursor:pointer;color:var(--accent);font-weight:700">+ ${isAr ? "\u0625\u0636\u0627\u0641\u0629 \u0642\u0633\u0645" : "Add Section"}</summary><form data-form="add-section" data-subject="${esc(sid)}" data-module="${esc(item.id)}" style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center"><input name="secTitle" placeholder="${isAr ? '\u0627\u0633\u0645 \u0627\u0644\u0642\u0633\u0645' : 'Section name'}" required style="flex:1;min-width:140px;min-height:32px;padding:4px 8px;font-size:12px"><div class="file-upload-wrap"><div class="file-upload-btn" style="min-height:32px;padding:4px 10px;font-size:11px">\u{1F4CE} PDF</div><input type="file" accept=".pdf" name="secPdf" class="sec-pdf-input"></div><button class="secondary-btn" type="submit" style="min-height:32px;padding:4px 10px;font-size:12px">${isAr ? "\u0623\u0636\u0641" : "Add"}</button></form></details>
@@ -1617,13 +1624,18 @@ function renderCode() {
 
     <section class="learn-grid" style="margin-top:14px">
       <aside class="learn-sidebar">
-        ${state.languages.map(language => renderLanguageCard(language, selected.id)).join("")}
+        ${state.languages.map(language => renderLanguageCard(language, selected?.id)).join("")}
       </aside>
+      ${selected ? `
       <article class="panel learn-panel">
         <div class="learn-title">
           <div>
             <span class="chip ${selected.tone || "accent"}">${esc(loc(selected.level))}</span>
-            <h2>${esc(loc(selected.title))}</h2>
+            <h2 style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              ${esc(loc(selected.title))}
+              <button class="secondary-btn" data-action="edit-language" data-id="${esc(selected.id)}" type="button" style="padding:4px 8px;font-size:11px;min-height:26px" title="Edit">&#9998;</button>
+              <button class="delete-btn" data-action="delete-language" data-id="${esc(selected.id)}" type="button" style="width:26px;height:26px;font-size:11px" title="Delete">x</button>
+            </h2>
             <p class="muted">${esc(loc(selected.subtitle))}</p>
           </div>
           <span class="chip indigo">${taskCompletion(selected.tasks)}%</span>
@@ -1633,6 +1645,12 @@ function renderCode() {
         </div>
         ${renderLanguageTab(selected, tab)}
       </article>
+      ` : `
+      <article class="panel" style="text-align:center;padding:40px;">
+        <h3>${lang() === 'ar' ? 'لا توجد لغات' : 'No Languages Found'}</h3>
+        <p class="muted">${lang() === 'ar' ? 'أضف لغة جديدة للبدء.' : 'Add a new language to get started.'}</p>
+      </article>
+      `}
     </section>
   `;
 }
@@ -2481,6 +2499,32 @@ document.addEventListener("click", async event => {
     state.projects = state.projects.filter(project => project.id !== actionEl.dataset.id);
     render();
   }
+
+  if (action === "edit-language") {
+    const langObj = state.languages.find(l => l.id === actionEl.dataset.id);
+    if (!langObj) return;
+    const isAr = lang() === "ar";
+    const newTitle = await ask(isAr ? "اسم اللغة الجديد:" : "New language name:", loc(langObj.title));
+    if (!newTitle) return;
+    langObj.title = txt(newTitle, newTitle);
+    
+    const newSub = await ask(isAr ? "الوصف القصير:" : "Short description:", loc(langObj.subtitle));
+    if (newSub) langObj.subtitle = txt(newSub, newSub);
+    
+    saveState();
+    render();
+  }
+
+  if (action === "delete-language") {
+    if (await confirmAction(lang() === "ar" ? "هل أنت متأكد من حذف هذه اللغة؟" : "Are you sure you want to delete this language?")) {
+      state.languages = state.languages.filter(l => l.id !== actionEl.dataset.id);
+      if (state.activeLanguageId === actionEl.dataset.id) {
+        state.activeLanguageId = state.languages.length > 0 ? state.languages[0].id : null;
+      }
+      saveState();
+      render();
+    }
+  }
 });
 
 function updateCgpaDOM() {
@@ -2724,7 +2768,8 @@ document.addEventListener("submit", async event => {
       const summary = String(data.get("lecSummary") || "").trim();
       const pages = Number(data.get("lecPages") || 1);
       const pdfInput = form.querySelector(".add-lec-pdf-input");
-      const newMod = { id: uid("lec"), type: "lecture", title: txt("Lec " + num + " - " + title, "Lec " + num + " - " + title), file: "", pages: pages, topics: summary ? [txt(summary, summary)] : [], practice: [], sections: [] };
+      const topicsArr = summary ? summary.split("\n").filter(l => l.trim() !== "").map(l => txt(l.trim(), l.trim())) : [];
+      const newMod = { id: uid("lec"), type: "lecture", title: txt("Lec " + num + " - " + title, "Lec " + num + " - " + title), file: "", pages: pages, topics: topicsArr, practice: [], sections: [] };
       if (pdfInput && pdfInput.files && pdfInput.files[0]) { newMod.pdfName = pdfInput.files[0].name; newMod.pdfData = URL.createObjectURL(pdfInput.files[0]); }
       subject.modules.push(newMod);
       state.activeSubjectTab = "lectures";
