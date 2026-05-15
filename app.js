@@ -1673,7 +1673,28 @@ function renderLanguageCard(language, activeId) {
 
 function renderLanguageTab(language, tab) {
   if (tab === "modules") {
-    return `<div class="module-grid">${language.modules.map(renderLanguageModule).join("")}</div>`;
+    const isAr = lang() === "ar";
+    return `
+      <details class="import-box" style="margin-bottom:14px">
+        <summary style="font-size:15px">+ ${isAr ? "إضافة موديول جديد" : "Add New Module"}</summary>
+        <form data-form="add-language-module" data-lang="${esc(language.id)}" style="margin-top:12px">
+          <div class="form-grid" style="grid-template-columns:100px 1fr;gap:10px">
+            <label style="font-size:13px;font-weight:700;color:var(--muted)">${isAr ? "العنوان" : "Title"}</label>
+            <input name="modTitle" placeholder="${isAr ? 'مثال: أساسيات اللغة' : 'e.g. Fundamentals'}" required>
+            
+            <label style="font-size:13px;font-weight:700;color:var(--muted)">${isAr ? "المواضيع (سطر لكل موضوع)" : "Topics (one per line)"}</label>
+            <textarea name="modTopics" placeholder="${isAr ? 'المتغيرات\nالدوال\nالمصفوفات' : 'Variables\nFunctions\nArrays'}" rows="4"></textarea>
+            
+            <label style="font-size:13px;font-weight:700;color:var(--muted)">${isAr ? "كود توضيحي" : "Demo Code"}</label>
+            <textarea name="modCode" placeholder="const x = 10;" rows="3" style="font-family:monospace"></textarea>
+          </div>
+          <div style="margin-top:10px">
+            <button class="primary-btn" type="submit">${isAr ? "إضافة" : "Add Module"}</button>
+          </div>
+        </form>
+      </details>
+      <div class="module-grid">${language.modules.map(m => renderLanguageModule(m, language.id)).join("")}</div>
+    `;
   }
 
   if (tab === "tasks") {
@@ -1689,13 +1710,26 @@ function renderLanguageTab(language, tab) {
   return `
     <div class="guide-layout">
       <div>
-        <h3>${esc(tr("labels.overview"))}</h3>
+        <h3 style="display:flex;justify-content:space-between;align-items:center">
+          ${esc(tr("labels.overview"))}
+          <button class="secondary-btn" data-action="edit-lang-goal" data-id="${esc(language.id)}" style="padding:4px 8px;font-size:11px">&#9998; Edit</button>
+        </h3>
         <p>${esc(loc(language.goal))}</p>
         <div class="callout">
-          <strong>${esc(tr("labels.resources"))}</strong>
-          <p>${esc((language.resources || []).join(" · "))}</p>
+          <strong style="display:flex;justify-content:space-between;align-items:center">
+            ${esc(tr("labels.resources"))}
+            <button class="secondary-btn" data-action="edit-lang-resources" data-id="${esc(language.id)}" style="padding:2px 6px;font-size:10px">&#9998; Edit</button>
+          </strong>
+          <p style="margin-top:4px">${esc((language.resources || []).join(" · "))}</p>
         </div>
-        ${(function(){ var ln = loc(language.name); var lr = resources.filter(function(r){ return r.area === ln || r.area === "C++" && language.id === "cpp" || r.area === "JavaScript" && language.id === "js"; }); return lr.length ? '<div class="callout" style="margin-top:8px"><strong>' + (lang() === "ar" ? "روابط مفيدة" : "Useful Links") + '</strong><div style="margin-top:6px">' + lr.map(function(r){ return '<div class="resource-row"><a href="' + esc(r.url) + '" target="_blank" rel="noreferrer">' + esc(r.name) + '</a><p class="small muted">' + esc(loc(r.note)) + '</p></div>'; }).join("") + '</div></div>' : ""; })()}
+        ${(function(){ 
+          var ln = loc(language.title); 
+          var lr = resources.filter(function(r){ return r.area === ln || r.area === "C++" && language.id === "cpp" || r.area === "JavaScript" && language.id === "js"; }); 
+          if (language.links) {
+            lr = lr.concat(language.links.map((lk, i) => ({ ...lk, isCustom: true, idx: i })));
+          }
+          return '<div class="callout" style="margin-top:8px"><strong style="display:flex;justify-content:space-between;align-items:center">' + (lang() === "ar" ? "روابط مفيدة" : "Useful Links") + ' <button class="secondary-btn" data-action="add-lang-link" data-id="' + esc(language.id) + '" style="padding:2px 6px;font-size:10px">+ Add</button></strong>' + (lr.length ? '<div style="margin-top:6px">' + lr.map(function(r){ return '<div class="resource-row"><div style="flex:1"><a href="' + esc(r.url) + '" target="_blank" rel="noreferrer">' + esc(r.name) + '</a><p class="small muted">' + esc(loc(r.note)) + '</p></div>' + (r.isCustom ? '<button class="delete-btn" data-action="delete-lang-link" data-id="' + esc(language.id) + '" data-index="' + r.idx + '" style="font-size:10px;padding:4px 8px">x</button>' : '') + '</div>'; }).join("") + '</div>' : '') + '</div>';
+        })()}
         <h3>${esc(tr("labels.modules"))}</h3>
         <div class="module-strip">
           ${language.modules.map(item => `<span class="chip">${esc(loc(item.title))}</span>`).join("")}
@@ -1720,7 +1754,8 @@ function renderLanguageTab(language, tab) {
   `;
 }
 
-function renderLanguageModule(item) {
+function renderLanguageModule(item, langId) {
+  const isAr = lang() === "ar";
   return `
     <article class="module-card">
       <div class="section-head">
@@ -1728,9 +1763,17 @@ function renderLanguageModule(item) {
           <span class="chip accent">Module</span>
           <h3 style="margin-top:8px">${esc(loc(item.title))}</h3>
         </div>
+        <div style="display:flex;gap:6px">
+          <button class="secondary-btn" data-action="edit-lang-module" data-lang="${esc(langId)}" data-id="${esc(item.id)}" type="button" style="padding:4px 8px;font-size:11px;min-height:26px">&#9998;</button>
+          <button class="delete-btn" data-action="delete-lang-module" data-lang="${esc(langId)}" data-id="${esc(item.id)}" type="button" style="width:26px;height:26px;font-size:11px">x</button>
+        </div>
       </div>
-      <ul>${item.topics.map(topic => `<li>${esc(loc(topic))}</li>`).join("")}</ul>
-      <pre class="code-box">${esc(item.code || "")}</pre>
+      <div style="margin-top:10px">
+        <ul class="small muted" style="padding-left:18px;${lang() === 'ar' ? 'padding-right:18px;padding-left:0' : ''}">
+          ${(item.topics || []).map(t => `<li>${esc(loc(t))}</li>`).join("")}
+        </ul>
+      </div>
+      ${item.code ? `<pre class="code-box" style="margin-top:10px;font-size:12px">${esc(item.code)}</pre>` : ""}
     </article>
   `;
 }
@@ -1742,11 +1785,13 @@ function renderAddLanguageTools() {
       <div class="grid cols-2" style="margin-top:12px">
         <div class="panel inset-panel">
           <h3>${esc(tr("labels.addLanguage"))}</h3>
-          <form class="form-grid" data-form="add-language">
+          <form class="form-grid" data-form="add-language" style="grid-template-columns:1fr;gap:10px">
             <input name="title" placeholder="${lang() === "ar" ? "اسم اللغة" : "Language name"}" required>
-            <input name="level" placeholder="${lang() === "ar" ? "المستوى" : "Level"}">
-            <input name="resource" placeholder="${lang() === "ar" ? "مصدر أساسي" : "Main resource"}">
-            <button class="secondary-btn" type="submit">${esc(tr("buttons.add"))}</button>
+            <input name="subtitle" placeholder="${lang() === "ar" ? "وصف قصير" : "Short description"}">
+            <input name="level" placeholder="${lang() === "ar" ? "المستوى (مثال: Beginner)" : "Level (e.g. Beginner)"}">
+            <input name="resource" placeholder="${lang() === "ar" ? "المصادر (افصل بفاصلة)" : "Resources (comma separated)"}">
+            <textarea name="goal" placeholder="${lang() === "ar" ? "الهدف العام / نظرة عامة" : "General goal / Overview"}" rows="3"></textarea>
+            <button class="primary-btn" type="submit" style="width:100%">${esc(tr("buttons.add"))}</button>
           </form>
         </div>
         <div class="panel inset-panel">
@@ -2525,6 +2570,89 @@ document.addEventListener("click", async event => {
       render();
     }
   }
+
+  if (action === "edit-lang-goal") {
+    const langObj = state.languages.find(l => l.id === actionEl.dataset.id);
+    if (!langObj) return;
+    const isAr = lang() === "ar";
+    const newGoal = await ask(isAr ? "الهدف العام الجديد:" : "New general goal:", loc(langObj.goal));
+    if (newGoal !== null) {
+      langObj.goal = txt(newGoal, newGoal);
+      saveState();
+      render();
+    }
+  }
+
+  if (action === "edit-lang-resources") {
+    const langObj = state.languages.find(l => l.id === actionEl.dataset.id);
+    if (!langObj) return;
+    const isAr = lang() === "ar";
+    const resStr = (langObj.resources || []).join(", ");
+    const newResStr = await ask(isAr ? "المصادر (افصل بينها بفاصلة):" : "Resources (separate by comma):", resStr);
+    if (newResStr !== null) {
+      langObj.resources = newResStr.split(",").map(r => r.trim()).filter(r => r);
+      saveState();
+      render();
+    }
+  }
+
+  if (action === "add-lang-link") {
+    const langObj = state.languages.find(l => l.id === actionEl.dataset.id);
+    if (!langObj) return;
+    const isAr = lang() === "ar";
+    const name = await ask(isAr ? "اسم الرابط:" : "Link name:");
+    if (!name) return;
+    const url = await ask(isAr ? "الرابط (URL):" : "URL:");
+    if (!url) return;
+    const note = await ask(isAr ? "ملاحظة قصيرة:" : "Short note:");
+    
+    if (!langObj.links) langObj.links = [];
+    langObj.links.push({ name, url, note: txt(note || "", note || "") });
+    saveState();
+    render();
+  }
+
+  if (action === "delete-lang-link") {
+    const langObj = state.languages.find(l => l.id === actionEl.dataset.id);
+    if (!langObj || !langObj.links) return;
+    const idx = parseInt(actionEl.dataset.index);
+    langObj.links.splice(idx, 1);
+    saveState();
+    render();
+  }
+
+  if (action === "edit-lang-module") {
+    const langObj = state.languages.find(l => l.id === actionEl.dataset.lang);
+    if (!langObj) return;
+    const mod = langObj.modules.find(m => m.id === actionEl.dataset.id);
+    if (!mod) return;
+    const isAr = lang() === "ar";
+    
+    const newTitle = await ask(isAr ? "عنوان الموديول الجديد:" : "New module title:", loc(mod.title));
+    if (newTitle !== null) mod.title = txt(newTitle, newTitle);
+    
+    const topicsStr = (mod.topics || []).map(t => loc(t)).join("\n");
+    const newTopicsStr = await ask(isAr ? "المواضيع (سطر لكل موضوع):" : "Topics (one per line):", topicsStr);
+    if (newTopicsStr !== null) {
+      mod.topics = newTopicsStr.split("\n").map(t => t.trim()).filter(t => t).map(t => txt(t, t));
+    }
+    
+    const newCode = await ask(isAr ? "كود توضيحي جديد:" : "New demo code:", mod.code || "");
+    if (newCode !== null) mod.code = newCode;
+    
+    saveState();
+    render();
+  }
+
+  if (action === "delete-lang-module") {
+    const langObj = state.languages.find(l => l.id === actionEl.dataset.lang);
+    if (!langObj) return;
+    if (await confirmAction(lang() === "ar" ? "حذف هذا الموديول؟" : "Delete this module?")) {
+      langObj.modules = langObj.modules.filter(m => m.id !== actionEl.dataset.id);
+      saveState();
+      render();
+    }
+  }
 });
 
 function updateCgpaDOM() {
@@ -2818,13 +2946,34 @@ document.addEventListener("submit", async event => {
       ...languageTemplate(),
       id,
       title: txt(title, title),
-      subtitle: txt(String(data.get("level") || "مسار جديد"), String(data.get("level") || "New track")),
-      level: txt(String(data.get("level") || "Beginner"), String(data.get("level") || "Beginner")),
-      resources: [String(data.get("resource") || "Custom resource")],
-      modules: languageTemplate().modules,
+      subtitle: txt(String(data.get("subtitle") || ""), String(data.get("subtitle") || "")),
+      level: txt(String(data.get("level") || ""), String(data.get("level") || "")),
+      goal: txt(String(data.get("goal") || ""), String(data.get("goal") || "")),
+      resources: String(data.get("resource") || "").split(",").map(r => r.trim()).filter(r => r),
+      modules: [],
+      links: [],
       tasks: tasks([[lang() === "ar" ? `ابدأ ${title}` : `Start ${title}`, `Start ${title}`]], `lang-${id}`)
     };
     importLanguageObject(language);
+  }
+
+  if (type === "add-language-module") {
+    const langObj = state.languages.find(l => l.id === form.dataset.lang);
+    if (langObj) {
+      const title = String(data.get("modTitle") || "").trim();
+      const topicsStr = String(data.get("modTopics") || "").trim();
+      const code = String(data.get("modCode") || "");
+      const newMod = {
+        id: uid("mod"),
+        title: txt(title, title),
+        topics: topicsStr.split("\n").map(t => t.trim()).filter(t => t).map(t => txt(t, t)),
+        code: code
+      };
+      if (!langObj.modules) langObj.modules = [];
+      langObj.modules.push(newMod);
+      saveState();
+      render();
+    }
   }
 
   if (type === "add-cgpa-course") {
