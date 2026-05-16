@@ -1467,11 +1467,17 @@ function renderAllModules(subject) {
           <textarea name="lecSummary" placeholder="${isAr ? '\u0645\u0644\u062e\u0635 \u0642\u0635\u064a\u0631' : 'Brief summary'}" rows="3" style="resize:vertical;font-family:inherit;font-size:inherit;padding:8px;border-radius:var(--radius);border:1px solid var(--line);background:var(--surface);color:var(--ink)"></textarea>
           <label style="font-size:13px;font-weight:700;color:var(--muted)">${isAr ? "\u0635\u0641\u062d\u0627\u062a" : "Pages"}</label>
           <input name="lecPages" type="number" min="1" value="1" style="max-width:120px">
+          
+          <label style="font-size:13px;font-weight:700;color:var(--muted)">${isAr ? "رابط PDF" : "PDF Link"}</label>
+          <input name="lecPdfUrl" placeholder="${isAr ? 'رابط Google Drive أو Dropbox...' : 'Google Drive, Dropbox, or web link...'}" style="grid-column: span 1;">
         </div>
-        <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <button class="primary-btn" type="submit" style="padding:8px 20px">${isAr ? "\u0623\u0636\u0641" : "Add Lecture"}</button>
-          <input name="lecPdfUrl" placeholder="${isAr ? 'رابط أو مسار الملف (اختياري)' : 'Link or path (optional)'}" style="flex:1;min-width:180px;font-size:12px;padding:6px 10px">
-          <div class="file-upload-wrap"><div class="file-upload-btn">\u{1F4CE} ${isAr ? 'رفع' : 'Upload'}</div><input type="file" accept=".pdf" name="lecPdf" class="add-lec-pdf-input"></div>
+        <div style="margin-top:12px;display:flex;gap:10px;align-items:center;border-top:1px solid var(--line);padding-top:12px">
+          <button class="primary-btn" type="submit" style="padding:10px 24px">${isAr ? "\u0623\u0636\u0641 \u0627\u0644\u0645\u062d\u0627\u0636\u0631\u0629" : "Add Lecture"}</button>
+          <div style="flex:1"></div>
+          <div class="file-upload-wrap">
+            <div class="file-upload-btn" style="background:transparent;border:1px dashed var(--line);font-size:11px;padding:6px 12px">\u{1F4CE} ${isAr ? 'أو ارفع ملف صغير' : 'Or upload small file'}</div>
+            <input type="file" accept=".pdf" name="lecPdf" class="add-lec-pdf-input">
+          </div>
         </div>
       </form>
     </details>
@@ -1774,11 +1780,17 @@ function renderLanguageTab(language, tab) {
             
             <label style="font-size:13px;font-weight:700;color:var(--muted)">${isAr ? "كود توضيحي" : "Demo Code"}</label>
             <textarea name="modCode" placeholder="const x = 10;" rows="3" style="font-family:monospace"></textarea>
+
+            <label style="font-size:13px;font-weight:700;color:var(--muted)">${isAr ? "رابط PDF" : "PDF Link"}</label>
+            <input name="modPdfUrl" placeholder="${isAr ? 'رابط Google Drive أو Dropbox...' : 'Google Drive, Dropbox, or web link...'}">
           </div>
-          <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <button class="primary-btn" type="submit">${isAr ? "إضافة" : "Add Module"}</button>
-            <input name="modPdfUrl" placeholder="${isAr ? 'رابط أو مسار (اختياري)' : 'Link or path (optional)'}" style="flex:1;min-width:160px;font-size:12px;padding:6px 10px">
-            <div class="file-upload-wrap"><div class="file-upload-btn" style="min-height:36px;padding:4px 12px;font-size:12px">\u{1F4CE} ${isAr ? 'رفع' : 'Upload'}</div><input type="file" accept=".pdf" name="modPdf" class="add-mod-pdf-input"></div>
+          <div style="margin-top:12px;display:flex;gap:10px;align-items:center;border-top:1px solid var(--line);padding-top:12px">
+            <button class="primary-btn" type="submit">${isAr ? "إضافة الموديول" : "Add Module"}</button>
+            <div style="flex:1"></div>
+            <div class="file-upload-wrap">
+              <div class="file-upload-btn" style="background:transparent;border:1px dashed var(--line);font-size:11px;padding:6px 12px;min-height:auto">\u{1F4CE} ${isAr ? 'أو ارفع ملف صغير' : 'Or upload small file'}</div>
+              <input type="file" accept=".pdf" name="modPdf" class="add-mod-pdf-input">
+            </div>
           </div>
         </form>
       </details>
