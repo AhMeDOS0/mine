@@ -1769,8 +1769,9 @@ function renderLanguageTab(language, tab) {
             <label style="font-size:13px;font-weight:700;color:var(--muted)">${isAr ? "كود توضيحي" : "Demo Code"}</label>
             <textarea name="modCode" placeholder="const x = 10;" rows="3" style="font-family:monospace"></textarea>
           </div>
-          <div style="margin-top:10px">
+          <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
             <button class="primary-btn" type="submit">${isAr ? "إضافة" : "Add Module"}</button>
+            <div class="file-upload-wrap"><div class="file-upload-btn" style="min-height:36px;padding:4px 12px;font-size:12px">\u{1F4CE} PDF</div><input type="file" accept=".pdf" name="modPdf" class="add-mod-pdf-input"></div>
           </div>
         </form>
       </details>
@@ -3468,8 +3469,16 @@ document.addEventListener("submit", async event => {
         id: uid("mod"),
         title: txt(title, title),
         topics: topicsStr.split("\n").map(t => t.trim()).filter(t => t).map(t => txt(t, t)),
-        code: code
+        code: code,
+        pages: 0,
+        practice: [],
+        sections: []
       };
+      const pdfInput = form.querySelector(".add-mod-pdf-input");
+      if (pdfInput && pdfInput.files && pdfInput.files[0]) {
+        newMod.pdfName = pdfInput.files[0].name;
+        newMod.pdfData = await toBase64(pdfInput.files[0]);
+      }
       if (!langObj.modules) langObj.modules = [];
       langObj.modules.push(newMod);
       saveState();
