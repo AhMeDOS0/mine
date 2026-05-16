@@ -2559,6 +2559,18 @@ function deleteTask(scope, parent, id) {
   saveState();
 }
 
+function findModule(id) {
+  for (const sub of state.subjects) {
+    const mod = sub.modules?.find(m => m.id === id);
+    if (mod) return { mod, parent: sub, type: "subject" };
+  }
+  for (const lan of state.languages) {
+    const mod = lan.modules?.find(m => m.id === id);
+    if (mod) return { mod, parent: lan, type: "language" };
+  }
+  return null;
+}
+
 function importSubjectObject(subject) {
   if (!subject || !subject.id || !subject.name) throw new Error("Invalid subject");
   subject.gradeItems = subject.gradeItems || [];
@@ -2797,15 +2809,28 @@ document.addEventListener("click", async event => {
   }
 
   if (action === "edit-module") {
-    const subject = state.subjects.find(s => s.id === actionEl.dataset.subject);
-    if (!subject) return;
-    const mod = subject.modules.find(m => m.id === actionEl.dataset.module);
-    if (!mod) return;
+    const res = findModule(actionEl.dataset.module);
+    if (!res) return;
+    const { mod } = res;
+    
     const newTitle = await ask(lang() === "ar" ? "عنوان جديد:" : "New title:", loc(mod.title));
-    if (!newTitle) return;
-    mod.title = txt(newTitle, newTitle);
-    const newPages = await ask(lang() === "ar" ? "عدد الصفحات:" : "Number of pages:", String(mod.pages));
-    if (newPages) mod.pages = Number(newPages) || mod.pages;
+    if (newTitle) mod.title = txt(newTitle, newTitle);
+    
+    const newPages = await ask(lang() === "ar" ? "عدد الصفحات:" : "Number of pages:", String(mod.pages || 0));
+    if (newPages !== null) mod.pages = Number(newPages) || 0;
+    
+    const topicsStr = (mod.topics || []).map(t => loc(t)).join("\n");
+    const newTopics = await ask(lang() === "ar" ? "المخرجات (كل سطر فكرة):" : "Outcomes (one per line):", topicsStr);
+    if (newTopics !== null) {
+      mod.topics = newTopics.split("\n").filter(t => t.trim()).map(t => txt(t.trim(), t.trim()));
+    }
+
+    const practiceStr = (mod.practice || []).map(p => loc(p)).join("\n");
+    const newPractice = await ask(lang() === "ar" ? "التدريبات (كل سطر فكرة):" : "Practice items (one per line):", practiceStr);
+    if (newPractice !== null) {
+      mod.practice = newPractice.split("\n").filter(p => p.trim()).map(p => txt(p.trim(), p.trim()));
+    }
+    
     saveState();
     render();
   }
@@ -3239,15 +3264,13 @@ document.addEventListener("change", async event => {
   if (pdfInput && pdfInput.files && pdfInput.files[0]) {
     const moduleId = pdfInput.dataset.module;
     const file = pdfInput.files[0];
-    for (const subject of state.subjects) {
-      const mod = subject.modules.find(m => m.id === moduleId);
-      if (mod) {
-        mod.pdfName = file.name;
-        mod.pdfData = URL.createObjectURL(file);
-        showToast(lang() === "ar" ? "تم رفع PDF" : "PDF uploaded");
-        render();
-        break;
-      }
+    const res = findModule(moduleId);
+    if (res) {
+      res.mod.pdfName = file.name;
+      res.mod.pdfData = URL.createObjectURL(file);
+      showToast(lang() === "ar" ? "تم رفع PDF" : "PDF uploaded");
+      saveState();
+      render();
     }
     return;
   }
@@ -3367,17 +3390,21 @@ document.addEventListener("submit", async event => {
   }
 
   if (type === "add-section") {
-    const subject = state.subjects.find(s => s.id === form.dataset.subject);
-    if (subject) {
-      const mod = subject.modules.find(m => m.id === form.dataset.module);
-      if (mod) {
-        if (!mod.sections) mod.sections = [];
-        const secTitle = String(data.get("secTitle") || "").trim();
-        const sec = { title: txt(secTitle, secTitle) };
-        const pdfInput = form.querySelector(".sec-pdf-input");
-        if (pdfInput && pdfInput.files && pdfInput.files[0]) { sec.pdfName = pdfInput.files[0].name; sec.pdfData = URL.createObjectURL(pdfInput.files[0]); }
-        mod.sections.push(sec);
+    const moduleId = form.dataset.module;
+    const res = findModule(moduleId);
+    if (res) {
+      const { mod } = res;
+      if (!mod.sections) mod.sections = [];
+      const secTitle = String(data.get("secTitle") || "").trim();
+      const sec = { title: txt(secTitle, secTitle) };
+      const pdfInput = form.querySelector(".sec-pdf-input");
+      if (pdfInput && pdfInput.files && pdfInput.files[0]) {
+        sec.pdfName = pdfInput.files[0].name;
+        sec.pdfData = URL.createObjectURL(pdfInput.files[0]);
       }
+      mod.sections.push(sec);
+      saveState();
+      render();
     }
   }
 
