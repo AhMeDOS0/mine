@@ -335,7 +335,7 @@ const ui = {
 };
 
 const routes = ["dashboard", "plan", "subjects", "code", "cyber", "tools", "cgpa", "todo", "focus", "projects", "cv", "history", "globalTasks"];
-const mainRoutes = ["dashboard", "plan", "subjects", "code", "cyber", "todo"];
+const mainRoutes = ["dashboard", "plan", "subjects", "code", "cyber", "todo", "tools"];
 const toolRoutes = ["cgpa", "focus", "projects", "cv", "history", "globalTasks"];
 
 const resources = [
