@@ -2559,6 +2559,15 @@ function deleteTask(scope, parent, id) {
   saveState();
 }
 
+function toBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+  });
+}
+
 function findModule(id) {
   for (const sub of state.subjects) {
     const mod = sub.modules?.find(m => m.id === id);
@@ -3267,8 +3276,8 @@ document.addEventListener("change", async event => {
     const res = findModule(moduleId);
     if (res) {
       res.mod.pdfName = file.name;
-      res.mod.pdfData = URL.createObjectURL(file);
-      showToast(lang() === "ar" ? "تم رفع PDF" : "PDF uploaded");
+      res.mod.pdfData = await toBase64(file);
+      showToast(lang() === "ar" ? "تم حفظ PDF في المتصفح" : "PDF saved in browser");
       saveState();
       render();
     }
@@ -3383,7 +3392,10 @@ document.addEventListener("submit", async event => {
       const pdfInput = form.querySelector(".add-lec-pdf-input");
       const topicsArr = summary ? summary.split("\n").filter(l => l.trim() !== "").map(l => txt(l.trim(), l.trim())) : [];
       const newMod = { id: uid("lec"), type: "lecture", title: txt("Lec " + num + " - " + title, "Lec " + num + " - " + title), file: "", pages: pages, topics: topicsArr, practice: [], sections: [] };
-      if (pdfInput && pdfInput.files && pdfInput.files[0]) { newMod.pdfName = pdfInput.files[0].name; newMod.pdfData = URL.createObjectURL(pdfInput.files[0]); }
+      if (pdfInput && pdfInput.files && pdfInput.files[0]) { 
+        newMod.pdfName = pdfInput.files[0].name; 
+        newMod.pdfData = await toBase64(pdfInput.files[0]); 
+      }
       subject.modules.push(newMod);
       state.activeSubjectTab = "lectures";
     }
@@ -3400,7 +3412,7 @@ document.addEventListener("submit", async event => {
       const pdfInput = form.querySelector(".sec-pdf-input");
       if (pdfInput && pdfInput.files && pdfInput.files[0]) {
         sec.pdfName = pdfInput.files[0].name;
-        sec.pdfData = URL.createObjectURL(pdfInput.files[0]);
+        sec.pdfData = await toBase64(pdfInput.files[0]);
       }
       mod.sections.push(sec);
       saveState();
