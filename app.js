@@ -1175,7 +1175,7 @@ function renderDashboard() {
             </div>
             <button class="secondary-btn" data-route="plan" type="button">${esc(tr("buttons.open"))}</button>
           </div>
-          ${renderTaskList(day.tasks.slice(0, 4), "day", day.id)}
+          ${renderTaskList(day.tasks, "day", day.id)}
         ` : `
           <div style="text-align:center; padding: 30px;">
             <h3>${lang() === "ar" ? "مفيش مهام خطة اليوم" : "No plan tasks today"}</h3>
