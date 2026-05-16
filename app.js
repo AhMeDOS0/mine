@@ -124,7 +124,8 @@ const ui = {
       cyber: "Cyber",
       tools: "الأدوات",
       cgpa: "CGPA",
-      focus: "To-do وتركيز",
+      todo: "قائمة المهام",
+      focus: "تركيز",
       projects: "المشاريع",
       cv: "CV"
     },
@@ -136,7 +137,8 @@ const ui = {
       cyber: "مسار Cyber Security",
       tools: "الأدوات الشخصية",
       cgpa: "حاسبة CGPA",
-      focus: "To-do وتركيز",
+      todo: "قائمة المهام",
+      focus: "مركز التركيز",
       projects: "المشاريع",
       cv: "CV والإنجازات",
       history: "سجل الإنجازات"
@@ -216,6 +218,8 @@ const ui = {
       imported: "تم استيراد المادة",
       invalidJson: "JSON غير صالح",
       sessionDone: "اتحفظت جلسة التركيز",
+      timerEdit: "دخل وقت التركيز بالدقائق:",
+      timerNotification: "انتهت جلسة التركيز! خد استراحة.",
       addToCv: "هل تريد إضافة هذه المهمة إلى الـ CV الخاص بك كإنجاز؟"
     }
   },
@@ -231,7 +235,8 @@ const ui = {
       cyber: "Cyber",
       tools: "Tools",
       cgpa: "CGPA",
-      focus: "To-do",
+      todo: "To-do List",
+      focus: "Focus Mode",
       projects: "Projects",
       cv: "CV"
     },
@@ -243,7 +248,8 @@ const ui = {
       cyber: "Cyber Security Track",
       tools: "Personal Tools",
       cgpa: "CGPA Calculator",
-      focus: "To-do and Focus",
+      todo: "To-do Center",
+      focus: "Focus Timer",
       projects: "Projects",
       cv: "CV & Achievements",
       history: "Activity History"
@@ -328,8 +334,8 @@ const ui = {
   }
 };
 
-const routes = ["dashboard", "plan", "subjects", "code", "cyber", "tools", "cgpa", "focus", "projects", "cv", "history", "globalTasks"];
-const mainRoutes = ["dashboard", "plan", "subjects", "code", "cyber", "tools"];
+const routes = ["dashboard", "plan", "subjects", "code", "cyber", "tools", "cgpa", "todo", "focus", "projects", "cv", "history", "globalTasks"];
+const mainRoutes = ["dashboard", "plan", "subjects", "code", "cyber", "todo"];
 const toolRoutes = ["cgpa", "focus", "projects", "cv", "history", "globalTasks"];
 
 const resources = [
@@ -1879,10 +1885,16 @@ function renderTools() {
       text: lang() === "ar" ? "حاسبة دقيقة بثلاث خانات عشرية وسيناريوهات تقديرات." : "Precise three-decimal calculator and grade scenarios."
     },
     {
+      route: "todo",
+      title: tr("titles.todo"),
+      meta: `${state.todos.length} tasks`,
+      text: lang() === "ar" ? "قائمة المهام الشخصية خارج جدول المواد." : "Personal to-do list outside the subject plan."
+    },
+    {
       route: "focus",
       title: tr("titles.focus"),
       meta: `${state.focusSessions} sessions`,
-      text: lang() === "ar" ? "To-do وFocus timer وجلسات مذاكرة محفوظة." : "To-do, focus timer, and saved study sessions."
+      text: lang() === "ar" ? "Focus timer وجلسات مذاكرة محفوظة مع إشعارات." : "Focus timer and saved study sessions with notifications."
     },
     {
       route: "projects",
@@ -1935,17 +1947,60 @@ function formatTimer(seconds) {
 }
 
 function renderFocus() {
+  const isAr = lang() === "ar";
   return `
-    <section class="grid cols-2">
-      <article class="panel">
-        <div class="section-head"><div><h2>Focus Timer</h2><p class="muted">50/10</p></div><span class="chip">${state.focusSessions}</span></div>
-        <div class="timer"><div><strong id="timerText">${formatTimer(state.focusSeconds)}</strong><div class="inline-actions" style="justify-content:center;margin-top:14px"><button class="primary-btn" data-action="timer-start" type="button">${esc(tr("buttons.start"))}</button><button class="secondary-btn" data-action="timer-pause" type="button">${esc(tr("buttons.pause"))}</button><button class="secondary-btn" data-action="timer-reset" type="button">${esc(tr("buttons.resetTimer"))}</button><button class="secondary-btn" data-action="timer-complete" type="button">${esc(tr("buttons.saveSession"))}</button></div></div></div>
-      </article>
-      <article class="panel">
-        <div class="section-head"><div><h2>To-do</h2><p class="muted">${lang() === "ar" ? "أي حاجة خارج جدول المواد." : "Anything outside the subject plan."}</p></div><span class="chip">${taskCompletion(state.todos)}%</span></div>
-        ${renderTaskList(state.todos, "todo", "")}
+    <section class="panel hero" style="text-align: center; max-width: 600px; margin: 0 auto;">
+      <div class="section-head" style="justify-content: center; flex-direction: column; gap: 10px;">
+        <h2>${esc(tr("titles.focus"))}</h2>
+        <p class="muted">${isAr ? "خصص وقتك للتركيز العميق." : "Dedicate time for deep focus."}</p>
+        <span class="chip accent" style="font-size: 1.2em; padding: 8px 16px;">${state.focusSessions} ${isAr ? "جلسات مكتملة" : "Sessions Done"}</span>
+      </div>
+      
+      <div class="timer" style="margin: 30px 0;">
+        <strong id="timerText" style="font-size: 5em; font-variant-numeric: tabular-nums;">${formatTimer(state.focusSeconds)}</strong>
+        <div class="inline-actions" style="justify-content: center; margin-top: 25px; gap: 12px;">
+          <button class="primary-btn" data-action="timer-start" type="button" style="padding: 12px 30px; font-size: 1.1em;">${esc(tr("buttons.start"))}</button>
+          <button class="secondary-btn" data-action="timer-pause" type="button" style="padding: 12px 20px;">${esc(tr("buttons.pause"))}</button>
+          <button class="secondary-btn" data-action="timer-reset" type="button" style="padding: 12px 20px;">${esc(tr("buttons.resetTimer"))}</button>
+        </div>
+      </div>
+
+      <div class="panel inset-panel" style="margin-top: 20px; display: flex; align-items: center; justify-content: space-between;">
+        <div>
+          <h3 style="margin:0">${isAr ? "مدة الجلسة" : "Session Duration"}</h3>
+          <p class="small muted">${isAr ? "اضبط الوقت المفضل لمذاكرتك" : "Adjust your preferred study time"}</p>
+        </div>
+        <button class="secondary-btn" data-action="timer-set-time" type="button" style="font-weight: 700;">
+          ${Math.floor(state.focusSeconds / 60)} ${isAr ? "دقيقة" : "Min"} &#9998;
+        </button>
+      </div>
+
+      <div class="inline-actions" style="margin-top: 30px; justify-content: center;">
+        <button class="secondary-btn" data-action="timer-complete" type="button" style="border-color: var(--green); color: var(--green);">
+          ${esc(tr("buttons.saveSession"))}
+        </button>
+      </div>
+    </section>
+  `;
+}
+
+function renderTodo() {
+  return `
+    <section class="panel hero">
+      <div class="section-head">
+        <div>
+          <h2>${esc(tr("titles.todo"))}</h2>
+          <p class="muted">${lang() === "ar" ? "أي حاجة خارج جدول المواد." : "Anything outside the subject plan."}</p>
+        </div>
+        <span class="chip accent">${taskCompletion(state.todos)}%</span>
+      </div>
+    </section>
+    
+    <section class="panel" style="margin-top: 14px; max-width: 800px; margin-inline: auto;">
+      ${renderTaskList(state.todos, "todo", "")}
+      <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--line);">
         ${taskForm("add-todo", "", lang() === "ar" ? "مهمة جديدة" : "New task")}
-      </article>
+      </div>
     </section>
   `;
 }
@@ -2200,8 +2255,8 @@ function render() {
   applyPreferences();
   renderNav(route);
   document.getElementById("pageTitle").textContent = route === "plan" ? loc(activePlan().name) : tr(`titles.${route}`);
-  const views = { dashboard: renderDashboard, plan: renderPlan, subjects: renderSubjects, code: renderCode, cyber: renderCyber, tools: renderTools, cgpa: renderCgpa, focus: renderFocus, projects: renderProjects, cv: renderCv, history: renderHistory, globalTasks: renderGlobalTasks };
-  document.getElementById("app").innerHTML = views[route]();
+  const views = { dashboard: renderDashboard, plan: renderPlan, subjects: renderSubjects, code: renderCode, cyber: renderCyber, tools: renderTools, cgpa: renderCgpa, todo: renderTodo, focus: renderFocus, projects: renderProjects, cv: renderCv, history: renderHistory, globalTasks: renderGlobalTasks };
+  document.getElementById("app").innerHTML = (views[route] || renderDashboard)();
   saveState();
 }
 
@@ -2530,6 +2585,9 @@ document.addEventListener("click", async event => {
   }
 
   if (action === "timer-start" && !timerInterval) {
+    if (Notification.permission === "default") {
+      Notification.requestPermission();
+    }
     timerInterval = window.setInterval(() => {
       state.focusSeconds = Math.max(0, state.focusSeconds - 1);
       const timerText = document.getElementById("timerText");
@@ -2537,6 +2595,25 @@ document.addEventListener("click", async event => {
       if (state.focusSeconds === 0) {
         window.clearInterval(timerInterval);
         timerInterval = null;
+        
+        if (Notification.permission === "granted") {
+          new Notification(lang() === "ar" ? "انتهى الوقت!" : "Time's up!", {
+            body: lang() === "ar" ? tr("copy.timerNotification") : "Your focus session has finished. Take a break!",
+            icon: "https://cdn-icons-png.flaticon.com/512/2523/2523035.png"
+          });
+        }
+        
+        // Auto save session when finished
+        state.focusSessions += 1;
+        state.focusSeconds = (state.focusDurationMinutes || 50) * 60;
+        state.todos.push({ 
+          id: uid("session"), 
+          text: txt(`جلسة تركيز ${state.focusSessions} مكتملة`, `Focus session ${state.focusSessions} completed`), 
+          done: true,
+          doneAt: new Date().toISOString().slice(0, 10)
+        });
+        showToast(tr("copy.sessionDone"));
+        render();
       }
       saveState();
     }, 1000);
@@ -2548,14 +2625,31 @@ document.addEventListener("click", async event => {
   }
 
   if (action === "timer-reset") {
-    state.focusSeconds = 50 * 60;
+    state.focusSeconds = (state.focusDurationMinutes || 50) * 60;
     render();
+  }
+
+  if (action === "timer-set-time") {
+    const isAr = lang() === "ar";
+    const currentMin = Math.floor(state.focusSeconds / 60);
+    const newVal = await ask(isAr ? "دخل وقت التركيز بالدقائق:" : "Enter focus time in minutes:", String(currentMin));
+    if (newVal !== null && !isNaN(Number(newVal)) && Number(newVal) > 0) {
+      state.focusDurationMinutes = Number(newVal);
+      state.focusSeconds = state.focusDurationMinutes * 60;
+      saveState();
+      render();
+    }
   }
 
   if (action === "timer-complete") {
     state.focusSessions += 1;
-    state.focusSeconds = 50 * 60;
-    state.todos.push({ id: uid("session"), text: txt(`جلسة تركيز ${state.focusSessions}`, `Focus session ${state.focusSessions}`), done: true });
+    state.focusSeconds = (state.focusDurationMinutes || 50) * 60;
+    state.todos.push({ 
+      id: uid("session"), 
+      text: txt(`جلسة تركيز ${state.focusSessions}`, `Focus session ${state.focusSessions}`), 
+      done: true,
+      doneAt: new Date().toISOString().slice(0, 10)
+    });
     showToast(tr("copy.sessionDone"));
     render();
   }
