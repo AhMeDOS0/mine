@@ -1463,9 +1463,10 @@ function renderAllModules(subject) {
           <label style="font-size:13px;font-weight:700;color:var(--muted)">${isAr ? "\u0635\u0641\u062d\u0627\u062a" : "Pages"}</label>
           <input name="lecPages" type="number" min="1" value="1" style="max-width:120px">
         </div>
-        <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
+        <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <button class="primary-btn" type="submit" style="padding:8px 20px">${isAr ? "\u0623\u0636\u0641" : "Add Lecture"}</button>
-          <div class="file-upload-wrap"><div class="file-upload-btn">\u{1F4CE} PDF</div><input type="file" accept=".pdf" name="lecPdf" class="add-lec-pdf-input"></div>
+          <input name="lecPdfUrl" placeholder="${isAr ? 'رابط أو مسار الملف (اختياري)' : 'Link or path (optional)'}" style="flex:1;min-width:180px;font-size:12px;padding:6px 10px">
+          <div class="file-upload-wrap"><div class="file-upload-btn">\u{1F4CE} ${isAr ? 'رفع' : 'Upload'}</div><input type="file" accept=".pdf" name="lecPdf" class="add-lec-pdf-input"></div>
         </div>
       </form>
     </details>
@@ -1494,7 +1495,7 @@ function renderModuleCard(item, subjectId) {
         </div>
       </div>
       <p class="small muted">${esc(item.file || "")}</p>
-      ${hasPdf ? `<a class="pdf-badge" ${item.pdfData ? 'href="' + item.pdfData + '" target="_blank"' : ''}>\u{1F4C4} ${esc(item.pdfName || "PDF")}</a>` : ""}
+      ${(item.pdfData || item.pdfUrl) ? `<a class="pdf-badge" href="${item.pdfData || item.pdfUrl}" target="_blank" rel="noreferrer">\u{1F4C4} ${esc(item.pdfName || "PDF")}</a>` : ""}
       <div class="file-upload-wrap" style="margin:8px 0">
         <div class="file-upload-btn">\u{1F4CE} ${isAr ? "\u0631\u0641\u0639 PDF" : "Upload PDF"}</div>
         <input type="file" accept=".pdf" data-action="upload-module-pdf" data-module="${esc(item.id)}">
@@ -1769,9 +1770,10 @@ function renderLanguageTab(language, tab) {
             <label style="font-size:13px;font-weight:700;color:var(--muted)">${isAr ? "كود توضيحي" : "Demo Code"}</label>
             <textarea name="modCode" placeholder="const x = 10;" rows="3" style="font-family:monospace"></textarea>
           </div>
-          <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
+          <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <button class="primary-btn" type="submit">${isAr ? "إضافة" : "Add Module"}</button>
-            <div class="file-upload-wrap"><div class="file-upload-btn" style="min-height:36px;padding:4px 12px;font-size:12px">\u{1F4CE} PDF</div><input type="file" accept=".pdf" name="modPdf" class="add-mod-pdf-input"></div>
+            <input name="modPdfUrl" placeholder="${isAr ? 'رابط أو مسار (اختياري)' : 'Link or path (optional)'}" style="flex:1;min-width:160px;font-size:12px;padding:6px 10px">
+            <div class="file-upload-wrap"><div class="file-upload-btn" style="min-height:36px;padding:4px 12px;font-size:12px">\u{1F4CE} ${isAr ? 'رفع' : 'Upload'}</div><input type="file" accept=".pdf" name="modPdf" class="add-mod-pdf-input"></div>
           </div>
         </form>
       </details>
@@ -2828,6 +2830,9 @@ document.addEventListener("click", async event => {
     
     const newPages = await ask(lang() === "ar" ? "عدد الصفحات:" : "Number of pages:", String(mod.pages || 0));
     if (newPages !== null) mod.pages = Number(newPages) || 0;
+
+    const newPdfUrl = await ask(lang() === "ar" ? "رابط أو مسار PDF:" : "PDF Link or Path:", mod.pdfUrl || "");
+    if (newPdfUrl !== null) mod.pdfUrl = newPdfUrl;
     
     const topicsStr = (mod.topics || []).map(t => loc(t)).join("\n");
     const newTopics = await ask(lang() === "ar" ? "المخرجات (كل سطر فكرة):" : "Outcomes (one per line):", topicsStr);
@@ -3396,6 +3401,9 @@ document.addEventListener("submit", async event => {
       if (pdfInput && pdfInput.files && pdfInput.files[0]) { 
         newMod.pdfName = pdfInput.files[0].name; 
         newMod.pdfData = await toBase64(pdfInput.files[0]); 
+      } else {
+        newMod.pdfUrl = String(data.get("lecPdfUrl") || "").trim();
+        if (newMod.pdfUrl) newMod.pdfName = newMod.pdfUrl.split("/").pop();
       }
       subject.modules.push(newMod);
       state.activeSubjectTab = "lectures";
@@ -3478,6 +3486,9 @@ document.addEventListener("submit", async event => {
       if (pdfInput && pdfInput.files && pdfInput.files[0]) {
         newMod.pdfName = pdfInput.files[0].name;
         newMod.pdfData = await toBase64(pdfInput.files[0]);
+      } else {
+        newMod.pdfUrl = String(data.get("modPdfUrl") || "").trim();
+        if (newMod.pdfUrl) newMod.pdfName = newMod.pdfUrl.split("/").pop();
       }
       if (!langObj.modules) langObj.modules = [];
       langObj.modules.push(newMod);
