@@ -1475,7 +1475,7 @@ function renderAllModules(subject) {
           <button class="primary-btn" type="submit" style="padding:10px 24px">${isAr ? "\u0623\u0636\u0641 \u0627\u0644\u0645\u062d\u0627\u0636\u0631\u0629" : "Add Lecture"}</button>
           <div style="flex:1"></div>
           <div class="file-upload-wrap">
-            <div class="file-upload-btn" style="background:transparent;border:1px dashed var(--line);font-size:11px;padding:6px 12px">\u{1F4CE} ${isAr ? 'أو ارفع ملف صغير' : 'Or upload small file'}</div>
+            <div class="file-upload-btn" style="background:transparent;border:1px dashed var(--line);font-size:11px;padding:6px 12px">\u{1F4CE} ${isAr ? 'إضافة رابط / ملف' : 'Add Link / File'}</div>
             <input type="file" accept=".pdf" name="lecPdf" class="add-lec-pdf-input">
           </div>
         </div>
@@ -1512,7 +1512,7 @@ function renderModuleCard(item, subjectId) {
         </div>
       ` : ""}
       <div class="file-upload-wrap" style="margin:8px 0">
-        <div class="file-upload-btn">\u{1F4CE} ${isAr ? "\u0631\u0641\u0639 PDF" : "Upload PDF"}</div>
+        <div class="file-upload-btn" style="background:var(--surface);border:1px dashed var(--line)">\u{1F4CE} ${isAr ? "إضافة رابط / ملف" : "Add Link / File"}</div>
         <input type="file" accept=".pdf" data-action="upload-module-pdf" data-module="${esc(item.id)}">
       </div>
       <h4>${esc(tr("labels.outcomes"))}</h4>
@@ -1792,7 +1792,7 @@ function renderLanguageTab(language, tab) {
             <button class="primary-btn" type="submit">${isAr ? "إضافة الموديول" : "Add Module"}</button>
             <div style="flex:1"></div>
             <div class="file-upload-wrap">
-              <div class="file-upload-btn" style="background:transparent;border:1px dashed var(--line);font-size:11px;padding:6px 12px;min-height:auto">\u{1F4CE} ${isAr ? 'أو ارفع ملف صغير' : 'Or upload small file'}</div>
+              <div class="file-upload-btn" style="background:transparent;border:1px dashed var(--line);font-size:11px;padding:6px 12px;min-height:auto">\u{1F4CE} ${isAr ? 'إضافة رابط / ملف' : 'Add Link / File'}</div>
               <input type="file" accept=".pdf" name="modPdf" class="add-mod-pdf-input">
             </div>
           </div>
@@ -2592,6 +2592,34 @@ function toBase64(file) {
   });
 }
 
+function showEditModal(title, initialValue, callback) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay active';
+  const isAr = lang() === 'ar';
+  overlay.innerHTML = `
+    <div class="modal-box">
+      <h3>${esc(title)}</h3>
+      <textarea id="modalTextArea">${esc(initialValue)}</textarea>
+      <div class="actions">
+        <button class="secondary-btn" id="modalCancel">${isAr ? 'إلغاء' : 'Cancel'}</button>
+        <button class="primary-btn" id="modalSave">${isAr ? 'حفظ' : 'Save'}</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  const ta = overlay.querySelector('#modalTextArea');
+  ta.focus();
+  ta.setSelectionRange(ta.value.length, ta.value.length);
+
+  overlay.querySelector('#modalCancel').onclick = () => {
+    document.body.removeChild(overlay);
+  };
+  overlay.querySelector('#modalSave').onclick = () => {
+    callback(ta.value);
+    document.body.removeChild(overlay);
+  };
+}
+
 function findModule(id) {
   for (const sub of state.subjects) {
     const mod = sub.modules?.find(m => m.id === id);
@@ -2856,19 +2884,16 @@ document.addEventListener("click", async event => {
     if (newPdfUrl !== null) mod.pdfUrl = newPdfUrl;
     
     const topicsStr = (mod.topics || []).map(t => loc(t)).join("\n");
-    const newTopics = await ask(lang() === "ar" ? "المخرجات (كل سطر فكرة):" : "Outcomes (one per line):", topicsStr);
-    if (newTopics !== null) {
+    showEditModal(lang() === "ar" ? "تعديل المخرجات" : "Edit Outcomes", topicsStr, (newTopics) => {
       mod.topics = newTopics.split("\n").filter(t => t.trim()).map(t => txt(t.trim(), t.trim()));
-    }
-
-    const practiceStr = (mod.practice || []).map(p => loc(p)).join("\n");
-    const newPractice = await ask(lang() === "ar" ? "التدريبات (كل سطر فكرة):" : "Practice items (one per line):", practiceStr);
-    if (newPractice !== null) {
-      mod.practice = newPractice.split("\n").filter(p => p.trim()).map(p => txt(p.trim(), p.trim()));
-    }
-    
-    saveState();
-    render();
+      
+      const practiceStr = (mod.practice || []).map(p => loc(p)).join("\n");
+      showEditModal(lang() === "ar" ? "تعديل التدريبات" : "Edit Practice Items", practiceStr, (newPractice) => {
+        mod.practice = newPractice.split("\n").filter(p => p.trim()).map(p => txt(p.trim(), p.trim()));
+        saveState();
+        render();
+      });
+    });
   }
 
   if (action === "remove-module-pdf") {
@@ -3307,16 +3332,27 @@ document.addEventListener("change", async event => {
   }
 
   const pdfInput = event.target.closest("[data-action='upload-module-pdf']");
-  if (pdfInput && pdfInput.files && pdfInput.files[0]) {
+  if (pdfInput) {
     const moduleId = pdfInput.dataset.module;
-    const file = pdfInput.files[0];
     const res = findModule(moduleId);
-    if (res) {
+    if (!res) return;
+
+    if (pdfInput.files && pdfInput.files[0]) {
+      const file = pdfInput.files[0];
       res.mod.pdfName = file.name;
       res.mod.pdfData = await toBase64(file);
-      showToast(lang() === "ar" ? "تم حفظ PDF في المتصفح" : "PDF saved in browser");
+      showToast(lang() === "ar" ? "تم حفظ الملف" : "File saved");
       saveState();
       render();
+    } else {
+      // If they just clicked the button without selecting a file, ask for a link
+      const link = await ask(lang() === "ar" ? "أدخل رابط PDF (Drive, etc):" : "Enter PDF Link (Drive, etc):");
+      if (link) {
+        res.mod.pdfUrl = link;
+        res.mod.pdfName = link.split("/").pop();
+        saveState();
+        render();
+      }
     }
     return;
   }
