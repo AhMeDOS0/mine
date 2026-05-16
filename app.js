@@ -2081,7 +2081,7 @@ function renderTodo() {
         <div style="margin-top: 20px;">
           <p class="small muted" style="margin-bottom: 8px;">${isAr ? "آخر الأنشطة:" : "Recent Activities:"}</p>
           <div id="quick-log-preview">
-            ${(state.dailyDone[getLocalTodayId()] || []).slice(-5).reverse().map(item => `
+            ${(state.dailyDone[getLocalTodayId()] || []).filter(item => item.scope === 'journal').slice(-5).reverse().map(item => `
               <div class="log-card done" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding: 10px; font-size: 13px;">
                 <div style="display: flex; gap: 10px; align-items: center;">
                   <div class="log-time">${new Date(item.time).toLocaleTimeString(ui[lang()].locale, { hour: '2-digit', minute: '2-digit' })}</div>
