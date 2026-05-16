@@ -1570,7 +1570,18 @@ function renderModuleCard(item, subjectId) {
           `).join("")}
         </div>
       ` : ""}
-      <details style="margin-top:8px"><summary class="small" style="cursor:pointer;color:var(--accent);font-weight:700">+ ${isAr ? "\u0625\u0636\u0627\u0641\u0629 \u0642\u0633\u0645" : "Add Section"}</summary><form data-form="add-section" data-subject="${esc(sid)}" data-module="${esc(item.id)}" style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center"><input name="secTitle" placeholder="${isAr ? '\u0627\u0633\u0645 \u0627\u0644\u0642\u0633\u0645' : 'Section name'}" required style="flex:1;min-width:140px;min-height:32px;padding:4px 8px;font-size:12px"><div class="file-upload-wrap"><div class="file-upload-btn" style="min-height:32px;padding:4px 10px;font-size:11px">\u{1F4CE} PDF</div><input type="file" accept=".pdf" name="secPdf" class="sec-pdf-input"></div><button class="secondary-btn" type="submit" style="min-height:32px;padding:4px 10px;font-size:12px">${isAr ? "\u0623\u0636\u0641" : "Add"}</button></form></details>
+      <details style="margin-top:8px">
+        <summary class="small" style="cursor:pointer;color:var(--accent);font-weight:700">+ ${isAr ? "\u0625\u0636\u0627\u0641\u0629 \u0642\u0633\u0645" : "Add Section"}</summary>
+        <form data-form="add-section" data-subject="${esc(sid)}" data-module="${esc(item.id)}" style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+          <input name="secTitle" placeholder="${isAr ? '\u0627\u0633\u0645 \u0627\u0644\u0642\u0633\u0645' : 'Section name'}" required style="flex:1;min-width:140px;min-height:32px;padding:4px 8px;font-size:12px">
+          <input name="secLink" placeholder="${isAr ? '\u0631\u0627\u0628\u0637 (Drive, etc)' : 'Link (Drive, etc)'}" style="flex:1;min-width:140px;min-height:32px;padding:4px 8px;font-size:12px">
+          <div class="file-upload-wrap">
+            <div class="file-upload-btn" style="min-height:32px;padding:4px 10px;font-size:14px;background:transparent;border:1px dashed var(--line)" title="${isAr ? 'رفع ملف' : 'Upload File'}">\u{1F4C2}</div>
+            <input type="file" accept=".pdf" name="secPdf" class="sec-pdf-input">
+          </div>
+          <button class="secondary-btn" type="submit" style="min-height:32px;padding:4px 10px;font-size:12px">${isAr ? "\u0623\u0636\u0641" : "Add"}</button>
+        </form>
+      </details>
     </article>
   `;
 }
@@ -3628,11 +3639,14 @@ document.addEventListener("submit", async event => {
       const { mod } = res;
       if (!mod.sections) mod.sections = [];
       const secTitle = String(data.get("secTitle") || "").trim();
-      const sec = { title: txt(secTitle, secTitle) };
+      const secLink = String(data.get("secLink") || "").trim();
+      const sec = { title: txt(secTitle, secTitle), resources: [] };
+      if (secLink) {
+        sec.resources.push({ name: secLink.split("/").pop().slice(0, 15), url: secLink });
+      }
       const pdfInput = form.querySelector(".sec-pdf-input");
       if (pdfInput && pdfInput.files && pdfInput.files[0]) {
-        sec.pdfName = pdfInput.files[0].name;
-        sec.pdfData = await toBase64(pdfInput.files[0]);
+        sec.resources.push({ name: pdfInput.files[0].name, data: await toBase64(pdfInput.files[0]) });
       }
       mod.sections.push(sec);
       saveState();
