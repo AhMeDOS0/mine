@@ -1505,7 +1505,6 @@ function renderModuleCard(item, subjectId) {
           <button class="delete-btn" data-action="delete-module" data-subject="${esc(sid)}" data-module="${esc(item.id)}" type="button" style="width:26px;height:26px;font-size:11px">x</button>
         </div>
       </div>
-      <p class="small muted">${esc(item.file || "")}</p>
       ${(item.pdfData || item.pdfUrl) ? `
         <div style="display:flex;align-items:center;gap:6px;margin:4px 0">
           <a class="pdf-badge" href="${item.pdfData || item.pdfUrl}" target="_blank" rel="noreferrer" style="margin:0">\u{1F4C4} ${esc(item.pdfName || "PDF")}</a>
