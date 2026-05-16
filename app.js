@@ -3744,6 +3744,7 @@ document.addEventListener("submit", async event => {
 
   form.reset();
   showToast(tr("copy.saved"));
+  saveState();
   render();
 });
 
