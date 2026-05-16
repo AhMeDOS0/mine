@@ -1514,7 +1514,9 @@ function renderModuleCard(item, subjectId) {
         ` : ""}
         ${(item.resources || []).map((res, ri) => `
           <div style="display:flex;align-items:center;gap:4px">
-            <a class="pdf-badge" href="${res.data || res.url}" target="_blank" rel="noreferrer" style="margin:0; background:var(--accent-2)">\u{1F4C4} ${esc(res.name || "Resource")}</a>
+            <a class="pdf-badge" href="${res.data || res.url}" target="_blank" rel="noreferrer" style="margin:0; background:var(--indigo); color:white; border:none">
+              \u{1F4C4} ${esc(loc(item.title))} ${ri > 0 ? `(${ri + 1})` : ""}
+            </a>
             <button class="delete-btn" data-action="remove-resource" data-module="${esc(item.id)}" data-index="${ri}" type="button" style="width:18px;height:18px;font-size:10px;padding:0">×</button>
           </div>
         `).join("")}
@@ -1557,7 +1559,9 @@ function renderModuleCard(item, subjectId) {
                 ` : ""}
                 ${(sec.resources || []).map((sr, sri) => `
                   <div style="display:flex;align-items:center;gap:2px">
-                    <a class="pdf-badge" style="font-size:9px;padding:2px 6px;margin:0;background:var(--indigo)" href="${sr.data || sr.url}" target="_blank">\u{1F4C4} ${esc(sr.name || "Res")}</a>
+                    <a class="pdf-badge" style="font-size:9px;padding:2px 6px;margin:0;background:var(--indigo);color:white;border:none" href="${sr.data || sr.url}" target="_blank">
+                      \u{1F4C4} ${esc(loc(sec.title))} ${sri > 0 ? `(${sri + 1})` : ""}
+                    </a>
                     <button class="delete-btn" data-action="remove-section-resource" data-module="${esc(item.id)}" data-sindex="${si}" data-rindex="${sri}" style="width:14px;height:14px;font-size:8px;padding:0">×</button>
                   </div>
                 `).join("")}
