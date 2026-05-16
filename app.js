@@ -117,7 +117,7 @@ const ui = {
     locale: "ar-EG",
     eyebrow: "من 14 مايو 2026 إلى نهاية الفاينلز",
     nav: {
-      dashboard: "الرئيسية",
+      dashboard: "لوحة التحكم",
       plan: "الخطة",
       subjects: "المواد",
       code: "اللغات",
@@ -234,7 +234,7 @@ const ui = {
     locale: "en-US",
     eyebrow: "May 14, 2026 through finals",
     nav: {
-      dashboard: "Home",
+      dashboard: "Dashboard",
       plan: "Plan",
       subjects: "Subjects",
       code: "Languages",
@@ -248,7 +248,7 @@ const ui = {
       date: "Date",
       targetDate: "Target Date",
       logAdded: "Added to log",
-      noLog: "No logs yet"
+      noLog: "No achievements recorded for this day."
     },
     titles: {
       dashboard: "Command Center",
