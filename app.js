@@ -886,7 +886,12 @@ function loadState() {
 }
 
 function saveState() {
-  localStorage.setItem(STORE_KEY, JSON.stringify(state));
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify(state));
+  } catch (e) {
+    console.error("Storage failed:", e);
+    showToast(lang() === "ar" ? "المساحة ممتلئة! استخدم روابط بدل الرفع." : "Storage full! Use links instead of uploading.");
+  }
 }
 
 function lang() {
@@ -3407,6 +3412,8 @@ document.addEventListener("submit", async event => {
       }
       subject.modules.push(newMod);
       state.activeSubjectTab = "lectures";
+      saveState();
+      render();
     }
   }
 
