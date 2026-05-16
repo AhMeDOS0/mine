@@ -123,11 +123,16 @@ const ui = {
       code: "اللغات",
       cyber: "Cyber",
       tools: "الأدوات",
-      cgpa: "CGPA",
       todo: "قائمة المهام",
-      focus: "تركيز",
-      projects: "المشاريع",
-      cv: "CV"
+      dailyLog: "اليوميات",
+      systemLog: "سجل العمليات",
+      logs: "السجلات",
+      globalTasks: "بحث شامل",
+      date: "التاريخ",
+      targetDate: "موعد الإنجاز",
+      logAdded: "تمت الإضافة للسجل",
+      noLog: "لا توجد إنجازات مسجلة لهذا اليوم.",
+      deleteConfirm: "هل أنت متأكد من حذف هذه المهمة؟"
     },
     titles: {
       dashboard: "لوحة التحكم",
@@ -135,13 +140,14 @@ const ui = {
       subjects: "مركز المواد",
       code: "مركز اللغات",
       cyber: "مسار Cyber Security",
-      tools: "الأدوات الشخصية",
+      tools: "الأدوات",
       cgpa: "حاسبة CGPA",
       todo: "قائمة المهام",
       focus: "مركز التركيز",
       projects: "المشاريع",
       cv: "CV والإنجازات",
-      history: "سجل الإنجازات"
+      logs: "سجل النشاط واليوميات",
+      globalTasks: "محرك البحث الشامل"
     },
     buttons: {
       focus: "ابدأ بلوك",
@@ -234,11 +240,15 @@ const ui = {
       code: "Languages",
       cyber: "Cyber",
       tools: "Tools",
-      cgpa: "CGPA",
       todo: "To-do List",
-      focus: "Focus Mode",
-      projects: "Projects",
-      cv: "CV"
+      dailyLog: "Daily Log",
+      systemLog: "System Log",
+      logs: "Logs",
+      globalTasks: "Global Tasks",
+      date: "Date",
+      targetDate: "Target Date",
+      logAdded: "Added to log",
+      noLog: "No logs yet"
     },
     titles: {
       dashboard: "Command Center",
@@ -246,13 +256,14 @@ const ui = {
       subjects: "Subject Center",
       code: "Language Hub",
       cyber: "Cyber Security Track",
-      tools: "Personal Tools",
+      tools: "Tools",
       cgpa: "CGPA Calculator",
       todo: "To-do Center",
       focus: "Focus Timer",
       projects: "Projects",
       cv: "CV & Achievements",
-      history: "Activity History"
+      logs: "Journal & Activity",
+      globalTasks: "Master Search"
     },
     buttons: {
       focus: "Start block",
@@ -326,17 +337,17 @@ const ui = {
       resetConfirm: "Resetting will replace your current saved data. Are you sure?",
       saved: "Saved",
       cvSaved: "Saved to CV",
-      imported: "Subject imported",
-      invalidJson: "Invalid JSON",
       sessionDone: "Focus session saved",
+      noLog: "No achievements recorded for this day.",
+      deleteConfirm: "Are you sure you want to delete this task?",
       addToCv: "Do you want to add this task to your professional CV?"
     }
   }
 };
 
-const routes = ["dashboard", "plan", "subjects", "code", "cyber", "tools", "cgpa", "todo", "focus", "projects", "cv", "history", "globalTasks"];
-const mainRoutes = ["dashboard", "plan", "subjects", "code", "cyber", "todo", "tools"];
-const toolRoutes = ["cgpa", "focus", "projects", "cv", "history", "globalTasks"];
+const routes = ["dashboard", "plan", "subjects", "code", "cyber", "tools", "cgpa", "todo", "focus", "projects", "cv", "logs"];
+const mainRoutes = ["dashboard", "plan", "subjects", "code", "cyber", "todo"];
+const toolRoutes = ["tools", "cgpa", "focus", "projects", "cv", "logs"];
 
 const resources = [
   { area: "Cyber", name: "TryHackMe Cyber Security 101", url: "https://tryhackme.com/path/outline/introtocyber", note: { ar: "مسار بداية واضح للـ Cyber", en: "A clear beginner cyber path" } },
@@ -710,7 +721,9 @@ function createDefaultState() {
     },
     globalSearch: "",
     globalTasksTab: "pending",
-    planTab: "roadmap"
+    planTab: "roadmap",
+    systemLog: [],
+    dailyDone: {}
   };
 }
 
@@ -912,6 +925,32 @@ function applyPreferences() {
   document.getElementById("themeToggle").innerHTML = `<span aria-hidden="true">${state.settings.theme === "dark" ? tr("buttons.light") : tr("buttons.dark")}</span>`;
   document.getElementById("themeToggle").setAttribute("aria-label", state.settings.theme === "dark" ? "Switch to light mode" : "Switch to dark mode");
   document.getElementById("langToggle").textContent = tr("buttons.lang");
+  
+  const toolsHeader = document.getElementById("toolsHeader");
+  if (toolsHeader) {
+    const isAr = lang() === "ar";
+    const currentRoute = getRoute();
+    const toolRoutes = ["cgpa", "focus", "projects", "cv", "logs", "globalTasks"];
+    let label = isAr ? "الخدمات" : "Utilities";
+    if (toolRoutes.includes(currentRoute)) {
+      label = tr("titles." + currentRoute);
+    }
+
+    toolsHeader.innerHTML = `
+      <div class="dropdown">
+        <button class="tool-btn dropdown-btn" id="toolsMenuBtn" type="button" style="width: auto; padding: 0 16px; font-size: 14px;">
+          ${label} ▾
+        </button>
+        <div class="dropdown-content">
+          <button data-route="cgpa">${tr("titles.cgpa")}</button>
+          <button data-route="focus">${tr("titles.focus")}</button>
+          <button data-route="projects">${tr("titles.projects")}</button>
+          <button data-route="cv">${tr("titles.cv")}</button>
+          <button data-route="logs">${tr("titles.logs")}</button>
+        </div>
+      </div>
+    `;
+  }
 
   const localToday = new Date();
   const year = localToday.getFullYear();
@@ -920,8 +959,6 @@ function applyPreferences() {
   const todayId = `${year}-${month}-${dayNum}`;
 
   const dateStr = formatDate(todayId);
-  const throughText = lang() === "ar" ? "إلى نهاية الفاينلز" : "through finals";
-  document.getElementById("pageEyebrow").textContent = `${dateStr} ${throughText}`;
   const brandSub = document.getElementById("brandSubtitle");
   if (brandSub) brandSub.textContent = dateStr;
 }
@@ -1034,11 +1071,22 @@ function renderMetric(value, label) {
 }
 
 function renderTask(task, scope, parentId = "") {
-  const overdueBadge = task.isOverdue ? `<span class="chip amber" style="margin-inline-start:8px;font-size:10px">${lang() === 'ar' ? `متأخر ${task.daysPast} يوم` : `Past ${task.daysPast} day${task.daysPast > 1 ? 's' : ''}`}</span>` : '';
+  const isAr = lang() === 'ar';
+  const overdueBadge = task.isOverdue ? `<span class="chip amber" style="margin-inline-start:8px;font-size:10px">${isAr ? `متأخر ${task.daysPast} يوم` : `Past ${task.daysPast} day${task.daysPast > 1 ? 's' : ''}`}</span>` : '';
+  const dateBadge = task.targetDate ? `<span class="chip ${task.isOverdue ? 'amber' : 'indigo'}" style="margin-inline-start:8px;font-size:10px">${esc(formatDate(task.targetDate))}</span>` : '';
+  
+  const recurrenceText = task.recurrence ? (task.recurrence === 1 ? (isAr ? "يومي" : "Daily") : (task.recurrence === 7 ? (isAr ? "أسبوعي" : "Weekly") : (isAr ? `كل ${task.recurrence} يوم` : `Every ${task.recurrence} days`))) : '';
+  const recurrenceBadge = recurrenceText ? `<span class="chip coral" style="margin-inline-start:8px;font-size:10px">${recurrenceText}</span>` : '';
+  
   return `
     <label class="task-row ${task.done ? "done" : ""} ${task.isOverdue ? "overdue" : ""}">
       <input type="checkbox" data-action="toggle-task" data-scope="${esc(scope)}" data-parent="${esc(parentId)}" data-id="${esc(task.id)}" ${task.done ? "checked" : ""}>
-      <span class="task-text" style="display:flex;align-items:center;flex-wrap:wrap">${esc(loc(task.text))}${overdueBadge}</span>
+      <span class="task-text" style="display:flex;align-items:center;flex-wrap:wrap">
+        ${esc(loc(task.text))}
+        ${dateBadge}
+        ${overdueBadge}
+        ${recurrenceBadge}
+      </span>
       <button class="delete-btn" data-action="delete-task" data-scope="${esc(scope)}" data-parent="${esc(parentId)}" data-id="${esc(task.id)}" type="button" aria-label="Delete task">x</button>
     </label>
   `;
@@ -1052,6 +1100,7 @@ function taskForm(form, parentId, placeholder) {
   return `
     <form class="form-line" data-form="${form}" data-parent="${esc(parentId)}">
       <input name="text" required placeholder="${esc(placeholder)}">
+      <input name="targetDate" type="date" style="width: auto; min-width: 120px;">
       <button class="secondary-btn" type="submit">${esc(tr("buttons.add"))}</button>
     </form>
   `;
@@ -1140,27 +1189,37 @@ function renderPlan() {
   const tab = state.planTab || "roadmap";
 
   return `
-    <section class="panel hero">
-      <div class="section-head">
-        <div>
-          <h2>${plan.id !== 'empty' ? esc(loc(plan.name)) : (isAr ? "خطة المذاكرة" : "Study Plan")}</h2>
-          <p class="muted">${(plan.desc && loc(plan.desc)) ? esc(loc(plan.desc)) : (isAr ? "نظم وقتك ومهامك اليومية" : "Organize your time and daily tasks")}</p>
-        </div>
-        <button class="secondary-btn" data-action="create-new-plan" type="button" style="padding: 6px 14px; font-size:13px">+ ${isAr ? "خطة مخصصة" : "Custom Plan"}</button>
-      </div>
-
-      <div style="margin-top:16px; display:flex; gap:8px; flex-wrap:wrap">
-        ${state.plans.map(p => `
-          <div class="chip ${p.id === plan.id ? "accent" : "indigo"}" data-action="select-plan" data-id="${p.id}" style="cursor:pointer; display:inline-flex; align-items:center; gap:8px; padding: 6px 14px; font-size:13px">
-            ${esc(loc(p.name))}
-            ${p.id !== 'finals' ? `<button class="delete-btn" data-action="delete-plan" data-id="${p.id}" type="button" style="background:transparent; border:none; color:var(--red); font-weight:bold; cursor:pointer; padding: 0; font-size:1.2em; line-height: 1;" aria-label="Delete Plan">×</button>` : ''}
+    <section class="panel" style="padding: 14px 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 20px;">
+        <div style="flex: 1;">
+          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 4px;">
+            <h2 style="margin:0">${plan.id !== 'empty' ? esc(loc(plan.name)) : (isAr ? "خطة المذاكرة" : "Study Plan")}</h2>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              ${state.plans.map(p => `
+                <div class="chip ${p.id === plan.id ? "accent" : "indigo"}" data-action="select-plan" data-id="${p.id}" style="cursor:pointer; padding: 3px 10px; font-size:11px; display:inline-flex; align-items:center; gap:5px">
+                  ${esc(loc(p.name))}
+                  ${p.id !== 'finals' ? `<button class="delete-btn" data-action="delete-plan" data-id="${p.id}" type="button" style="background:transparent; border:none; color:var(--red); font-weight:bold; padding: 0; font-size:14px; line-height: 1;">×</button>` : ''}
+                </div>
+              `).join("")}
+            </div>
           </div>
-        `).join("")}
+          <p class="muted small">${(plan.desc && loc(plan.desc)) ? esc(loc(plan.desc)) : (isAr ? "نظم وقتك ومهامك اليومية" : "Organize your time and daily tasks")}</p>
+        </div>
+        <button class="secondary-btn" data-action="create-new-plan" type="button" style="padding: 4px 12px; font-size:12px">+ ${isAr ? "خطة مخصصة" : "Custom Plan"}</button>
       </div>
 
-      <div class="tabs" style="margin-top:20px">
-        <button class="tab-btn ${tab === 'roadmap' ? 'active' : ''}" data-action="set-plan-tab" data-tab="roadmap" type="button">${isAr ? "خارطة الطريق" : "Daily Roadmap"}</button>
-        ${plan.id === 'finals' ? `<button class="tab-btn ${tab === 'exams' ? 'active' : ''}" data-action="set-plan-tab" data-tab="exams" type="button">${isAr ? "جدول الامتحانات" : "Exam Schedule"}</button>` : ''}
+      <div class="tabs" style="margin-top:14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; gap: 6px;">
+          <button class="tab-btn ${tab === 'roadmap' ? 'active' : ''}" data-action="set-plan-tab" data-tab="roadmap" type="button" style="padding: 6px 14px; font-size:13px">${isAr ? "خارطة الطريق" : "Daily Roadmap"}</button>
+          ${plan.id === 'finals' ? `<button class="tab-btn ${tab === 'exams' ? 'active' : ''}" data-action="set-plan-tab" data-tab="exams" type="button" style="padding: 6px 14px; font-size:13px">${isAr ? "جدول الامتحانات" : "Exam Schedule"}</button>` : ''}
+        </div>
+        ${tab === 'roadmap' ? `
+        <div style="display: flex; align-items: center; gap: 8px;">
+           <span class="small muted">${isAr ? "اختر يوم:" : "Select Day:"}</span>
+           <input type="date" class="search-input" data-action="jump-to-plan-date" value="${state.activePlanDate || ''}" style="padding: 4px 10px; font-size: 13px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface); color: var(--ink);">
+           ${state.activePlanDate ? `<button class="delete-btn" data-action="clear-plan-date" style="padding: 4px 10px; font-size: 12px;">×</button>` : ''}
+        </div>
+        ` : ''}
       </div>
     </section>
 
@@ -1208,17 +1267,22 @@ function renderPlan() {
           const todayDate = new Date();
           todayDate.setHours(0, 0, 0, 0);
           
-          const filteredDays = activePlan().days.map(day => {
-            const dayDate = new Date(day.id);
-            const daysPast = Math.floor((todayDate - dayDate) / 86400000);
-            
-            let filteredTasks = day.tasks.filter(task => !(daysPast > 0 && task.done));
-            filteredTasks = filteredTasks.map(task => {
-              if (daysPast > 0 && !task.done) return { ...task, isOverdue: true, daysPast };
-              return task;
-            });
-            return { ...day, tasks: filteredTasks, daysPast };
-          }).filter(day => !(day.daysPast > 0 && day.tasks.length === 0));
+          let filteredDays = activePlan().days;
+          if (state.activePlanDate) {
+            filteredDays = filteredDays.filter(d => d.id === state.activePlanDate);
+            if (filteredDays.length === 0) return `<p class="muted" style="grid-column: 1/-1; text-align: center; padding: 40px;">${isAr ? "لا توجد مهام لهذا التاريخ في هذه الخطة." : "No tasks found for this date in this plan."}</p>`;
+          } else {
+            filteredDays = filteredDays.map(day => {
+              const dayDate = new Date(day.id);
+              const daysPast = Math.floor((todayDate - dayDate) / 86400000);
+              let filteredTasks = day.tasks.filter(task => !(daysPast > 0 && task.done));
+              filteredTasks = filteredTasks.map(task => {
+                if (daysPast > 0 && !task.done) return { ...task, isOverdue: true, daysPast };
+                return task;
+              });
+              return { ...day, tasks: filteredTasks, daysPast };
+            }).filter(day => !(day.daysPast > 0 && day.tasks.length === 0));
+          }
 
           return filteredDays.map(day => {
             const allDone = day.tasks.length > 0 && day.tasks.every(t => t.done);
@@ -1289,6 +1353,8 @@ function renderSubjects() {
           <div>
             <h2 style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
               ${esc(loc(selected.name))}
+              <button class="secondary-btn" data-action="edit-subject" data-id="${esc(selected.id)}" type="button" style="padding:4px 8px;font-size:11px;min-height:26px" title="Edit">&#9998;</button>
+              <button class="delete-btn" data-action="delete-subject" data-id="${esc(selected.id)}" type="button" style="width:26px;height:26px;font-size:11px" title="Delete">x</button>
               <div class="grade-badge" style="display:flex;align-items:center;background:var(--accent);color:white;padding:2px 10px;border-radius:6px;font-size:14px;font-weight:bold">
                 ${expectedGradeFromPercent(subjectGrade(selected).percent)}
               </div>
@@ -1909,22 +1975,16 @@ function renderTools() {
       text: lang() === "ar" ? "كل إنجاز محفوظ من المهام والتحديات والمشاريع." : "Achievements from tasks, challenges, and projects."
     },
     {
-      route: "history",
-      title: lang() === "ar" ? "سجل النشاط" : "Activity Log",
-      meta: "Daily tracking",
-      text: lang() === "ar" ? "تقرير يومي باللي خلصته واللي مخلصتوش في الخطة." : "A daily report of what you finished and what you didn't in your plan."
-    },
-    {
-      route: "globalTasks",
-      title: lang() === "ar" ? "المهام المتبقية" : "Master To-Do",
-      meta: "All pending tasks",
-      text: lang() === "ar" ? "عرض شامل لكل اللي لسه مخلصتوش في المواد والبرمجة والخطة." : "A complete view of every unfinished task in subjects, code, and plan."
+      route: "logs",
+      title: tr("titles.logs"),
+      meta: `${state.systemLog.length} events`,
+      text: lang() === "ar" ? "سجل شامل لكل اللي اتضاف أو اتمسح أو خلصته النهاردة." : "A complete log of everything added, deleted, or finished today."
     }
   ];
   return `
     <section class="panel hero">
-      <div class="section-head">
-        <div>
+      <div class="section-head" style="justify-content: center;">
+        <div style="text-align: center;">
           <h2>${esc(tr("titles.tools"))}</h2>
           <p class="muted">${esc(tr("copy.toolsLead"))}</p>
         </div>
@@ -1985,23 +2045,55 @@ function renderFocus() {
 }
 
 function renderTodo() {
+  const isAr = lang() === "ar";
   return `
     <section class="panel hero">
       <div class="section-head">
         <div>
           <h2>${esc(tr("titles.todo"))}</h2>
-          <p class="muted">${lang() === "ar" ? "أي حاجة خارج جدول المواد." : "Anything outside the subject plan."}</p>
+          <p class="muted">${isAr ? "خطط لبكره أو سجل اللي عملته دلوقتي." : "Plan for tomorrow or log what you did now."}</p>
         </div>
         <span class="chip accent">${taskCompletion(state.todos)}%</span>
       </div>
     </section>
     
-    <section class="panel" style="margin-top: 14px; max-width: 800px; margin-inline: auto;">
-      ${renderTaskList(state.todos, "todo", "")}
-      <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--line);">
-        ${taskForm("add-todo", "", lang() === "ar" ? "مهمة جديدة" : "New task")}
-      </div>
-    </section>
+    <div class="grid cols-2" style="margin-top: 14px;">
+      <section class="panel">
+        <div class="section-head">
+          <h3>${isAr ? "قائمة المهام القادمة" : "Upcoming Tasks"}</h3>
+          <p class="small muted">${isAr ? "اللي ناوي تعمله ومعاه تاريخ." : "What you plan to do with a date."}</p>
+        </div>
+        ${renderTaskList(state.todos, "todo", "")}
+        <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--line);">
+          ${taskForm("add-todo", "", isAr ? "مهمة جديدة" : "New task")}
+        </div>
+      </section>
+
+      <section class="panel" style="background: color-mix(in srgb, var(--accent) 5%, var(--surface));">
+        <div class="section-head">
+          <h3>${isAr ? "سجل إنجاز فوري" : "Quick Activity Log"}</h3>
+          <p class="small muted">${isAr ? "خلصت حاجة؟ اكتبها وهتتسجل بالوقت فوراً." : "Finished something? Type it to log with time instantly."}</p>
+        </div>
+        <form class="form-line" data-form="log-activity-direct">
+          <input name="text" required placeholder="${isAr ? 'مثلاً: خلصت موديول البرمجة...' : 'e.g. Finished coding module...'}">
+          <button class="primary-btn" type="submit">${isAr ? "تسجيل" : "Log It"}</button>
+        </form>
+        <div style="margin-top: 20px;">
+          <p class="small muted" style="margin-bottom: 8px;">${isAr ? "آخر الأنشطة:" : "Recent Activities:"}</p>
+          <div id="quick-log-preview">
+            ${(state.dailyDone[getLocalTodayId()] || []).slice(-5).reverse().map(item => `
+              <div class="log-card done" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding: 10px; font-size: 13px;">
+                <div style="display: flex; gap: 10px; align-items: center;">
+                  <div class="log-time">${new Date(item.time).toLocaleTimeString(ui[lang()].locale, { hour: '2-digit', minute: '2-digit' })}</div>
+                  <div class="log-content"><strong>${esc(item.text)}</strong></div>
+                </div>
+                <button class="delete-btn" data-action="delete-daily-log" data-time="${item.time}" style="font-size: 10px; padding: 4px 8px;">×</button>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+      </section>
+    </div>
   `;
 }
 
@@ -2159,12 +2251,17 @@ function renderHistory() {
 function renderGlobalTasks() {
   const isAr = lang() === "ar";
   const query = (state.globalSearch || "").toLowerCase();
+  const dateQuery = state.globalDateSearch || "";
   const tab = state.globalTasksTab || "pending";
   
   const allGroups = allTaskGroups();
   const allTasks = allGroups.flatMap(g => g.tasks.map(t => ({ ...t, groupType: g.type, groupSource: g.source, scope: g.scope, parent: g.parent })));
   
-  const filtered = allTasks.filter(t => loc(t.text).toLowerCase().includes(query) || t.groupSource.toLowerCase().includes(query));
+  const filtered = allTasks.filter(t => {
+    const textMatch = loc(t.text).toLowerCase().includes(query) || t.groupSource.toLowerCase().includes(query);
+    const dateMatch = !dateQuery || t.targetDate === dateQuery || (t.scope === 'day' && t.parent === dateQuery);
+    return textMatch && dateMatch;
+  });
   const pending = filtered.filter(t => !t.done);
   const completed = filtered.filter(t => t.done);
   
@@ -2183,10 +2280,6 @@ function renderGlobalTasks() {
       <div class="progress" style="--value:${progress}%; height: 10px; margin-top: 15px;"><span></span></div>
       <p class="small muted" style="margin-top: 5px;">${isAr ? "إجمالي الإنجاز" : "Overall progress"}: ${progress}%</p>
     </section>
-
-    <div class="panel" style="margin-top: 14px;">
-      <input type="text" class="search-input" placeholder="${isAr ? "بحث..." : "Search..."}" value="${esc(state.globalSearch)}" data-action="global-search" style="width: 100%; padding: 12px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface); color: var(--ink);">
-    </div>
 
     <div class="tabs" style="margin-top: 14px; display: flex; gap: 10px;">
       <button class="tab-btn ${tab === 'pending' ? 'active' : ''}" data-action="set-global-tab" data-tab="pending" style="flex: 1; padding: 12px; border-radius: var(--radius); font-weight: 600; cursor: pointer; border: none; background: ${tab === 'pending' ? 'var(--accent)' : 'var(--surface)'}; color: ${tab === 'pending' ? 'white' : 'var(--ink)'};">
@@ -2232,6 +2325,133 @@ function renderGlobalTaskItem(task) {
   `;
 }
 
+function renderLogs() {
+  const isAr = lang() === "ar";
+  const systemLogs = state.systemLog || [];
+  const dailyDone = state.dailyDone || {};
+  
+  if (!state.activeJournalId) state.activeJournalId = getLocalTodayId();
+  const currentId = state.activeJournalId;
+  const currentDone = dailyDone[currentId] || [];
+  
+  // Calculate prev/next days
+  const d = new Date(currentId);
+  const prevDate = new Date(d); prevDate.setDate(d.getDate() - 1);
+  const nextDate = new Date(d); nextDate.setDate(d.getDate() + 1);
+  const prevId = prevDate.toISOString().slice(0, 10);
+  const nextId = nextDate.toISOString().slice(0, 10);
+
+  return `
+    <section class="panel hero">
+      <div class="section-head">
+        <div>
+          <h2>${isAr ? "سجل النشاط واليوميات" : "Journal & Activity Log"}</h2>
+          <p class="muted">${isAr ? "مكان واحد لكل اللي أنجزته والعمليات اللي تمت." : "One place for all achievements and system events."}</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="grid cols-3" style="margin-top: 14px;">
+      <article class="panel">
+        <div class="section-head" style="justify-content: space-between; align-items: center;">
+           <button class="secondary-btn" data-action="set-journal-day" data-id="${prevId}" title="${isAr ? "اليوم السابق" : "Previous Day"}">←</button>
+           <input type="date" value="${esc(currentId)}" data-action="jump-to-journal-date" style="background: var(--bg-card); border: 1px solid var(--line); color: var(--ink); padding: 6px 12px; border-radius: var(--radius); font-weight: 700; font-family: inherit; cursor: pointer;">
+           <button class="secondary-btn" data-action="set-journal-day" data-id="${nextId}" title="${isAr ? "اليوم التالي" : "Next Day"}">→</button>
+        </div>
+        <div class="log-list" style="margin-top: 15px;">
+          <p class="small muted" style="text-align: center; margin-bottom: 15px;">${isAr ? "إنجازات هذا اليوم" : "Achievements for this day"}</p>
+          ${(function(){
+            // Combine manual logs (dailyDone) and plan tasks that were finished
+            const logs = [...currentDone.map(item => ({ ...item, isManual: true }))];
+            
+            // Find plan tasks for this day that are finished
+            const planDay = activePlan().days.find(d => d.id === currentId);
+            if (planDay) {
+              planDay.tasks.filter(t => t.done).forEach(t => {
+                // Avoid duplicates if already logged
+                if (!logs.some(l => l.text === loc(t.text))) {
+                  logs.push({ text: loc(t.text), scope: "plan", time: 0, isPlan: true });
+                }
+              });
+            }
+            
+            return logs.length > 0 ? logs.map(item => `
+              <div class="log-card done" style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; gap: 12px; align-items: center;">
+                  <div class="log-time">${item.time ? new Date(item.time).toLocaleTimeString(ui[lang()].locale, { hour: '2-digit', minute: '2-digit' }) : 'PLAN'}</div>
+                  <div class="log-content">
+                    <strong>${esc(item.text)}</strong>
+                    <p class="small muted">${esc(item.scope)}</p>
+                  </div>
+                </div>
+                ${item.isManual ? `<button class="delete-btn" data-action="delete-daily-log-specific" data-time="${item.time}" data-day="${currentId}">×</button>` : ''}
+              </div>
+            `).join("") : `<p class="muted" style="text-align: center; padding: 20px;">${tr("copy.noLog")}</p>`;
+          })()}
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="section-head">
+          <h3>${isAr ? "نظرة عامة" : "Plan Overview"}</h3>
+        </div>
+        <div class="log-list" style="max-height: 500px; overflow-y: auto;">
+          ${activePlan().days.slice().reverse().filter(d => d.id <= getLocalTodayId()).map(day => {
+            const done = day.tasks.filter(t => t.done).length;
+            const total = day.tasks.length;
+            const isSelected = day.id === currentId;
+            return `
+              <div class="history-item ${done === total && total > 0 ? 'done' : ''} ${isSelected ? 'active' : ''}" 
+                   style="margin-bottom: 8px; border-bottom: 1px solid var(--line); padding: 8px; cursor: pointer; border-radius: var(--radius); ${isSelected ? 'background: var(--surface-2); border-left: 4px solid var(--accent);' : ''}"
+                   data-action="set-journal-day" data-id="${day.id}">
+                <strong>${esc(loc(day.date))}</strong>
+                <p class="small muted">${done}/${total} tasks finished</p>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="section-head">
+          <h3>${isAr ? "عمليات النظام" : "System Events"}</h3>
+        </div>
+        <div class="log-list">
+          ${systemLogs.length > 0 ? systemLogs.slice().reverse().slice(0, 30).map(log => `
+            <div class="log-card ${log.type}" style="padding: 8px; font-size: 12px;">
+              <div class="log-time" style="min-width: 50px; font-size: 10px;">${new Date(log.time).toLocaleTimeString(ui[lang()].locale, { hour: '2-digit', minute: '2-digit' })}</div>
+              <div class="log-content">
+                <strong>${esc(log.message)}</strong>
+              </div>
+            </div>
+          `).join("") : `<p class="muted">${tr("copy.noLog")}</p>`}
+        </div>
+      </article>
+    </div>
+  `;
+}
+
+function addToSystemLog(type, message) {
+  if (!state.systemLog) state.systemLog = [];
+  state.systemLog.push({
+    type,
+    message,
+    time: new Date().toISOString()
+  });
+  if (state.systemLog.length > 200) state.systemLog.shift();
+}
+
+function addToDailyDone(text, scope) {
+  if (!state.dailyDone) state.dailyDone = {};
+  const today = getLocalTodayId();
+  if (!state.dailyDone[today]) state.dailyDone[today] = [];
+  state.dailyDone[today].push({
+    text,
+    scope,
+    time: new Date().toISOString()
+  });
+}
+
 function updateGlobalTasksDOM() {
   if (getRoute() !== "globalTasks") return;
   const query = (state.globalSearch || "").toLowerCase();
@@ -2250,57 +2470,93 @@ function updateGlobalTasksDOM() {
 }
 
 function render() {
-  const route = getRoute();
-  state.route = route;
-  applyPreferences();
-  renderNav(route);
-  document.getElementById("pageTitle").textContent = route === "plan" ? loc(activePlan().name) : tr(`titles.${route}`);
-  const views = { dashboard: renderDashboard, plan: renderPlan, subjects: renderSubjects, code: renderCode, cyber: renderCyber, tools: renderTools, cgpa: renderCgpa, todo: renderTodo, focus: renderFocus, projects: renderProjects, cv: renderCv, history: renderHistory, globalTasks: renderGlobalTasks };
-  document.getElementById("app").innerHTML = (views[route] || renderDashboard)();
-  saveState();
-}
-
-function showToast(message) {
-  const toast = document.getElementById("toast");
-  toast.textContent = message;
-  toast.classList.add("show");
-  window.clearTimeout(showToast.timer);
-  showToast.timer = window.setTimeout(() => toast.classList.remove("show"), 2200);
+  try {
+    const route = getRoute();
+    state.route = route;
+    applyPreferences();
+    renderNav(route);
+    document.getElementById("pageTitle").textContent = route === "plan" ? loc(activePlan().name) : tr(`titles.${route}`);
+    const views = { dashboard: renderDashboard, plan: renderPlan, subjects: renderSubjects, code: renderCode, cyber: renderCyber, tools: renderTools, cgpa: renderCgpa, todo: renderTodo, focus: renderFocus, projects: renderProjects, cv: renderCv, logs: renderLogs };
+    document.getElementById("app").innerHTML = (views[route] || renderDashboard)();
+    saveState();
+  } catch (err) {
+    console.error("Render error:", err);
+  }
 }
 
 function findTask(scope, parent, id) {
-  if (scope === "day") return activePlan().days.find(item => item.id === parent)?.tasks.find(task => task.id === id);
-  if (scope === "subject") return state.subjects.find(item => item.id === parent)?.tasks.find(task => task.id === id);
-  if (scope === "language") return state.languages.find(item => item.id === parent)?.tasks.find(task => task.id === id);
-  if (scope === "track") return state.tracks.find(item => item.id === parent)?.tasks.find(task => task.id === id);
-  if (scope === "cyber") return state.cyber.find(item => item.id === parent)?.tasks.find(task => task.id === id);
-  if (scope === "todo") return state.todos.find(task => task.id === id);
-  return null;
+  let list = [];
+  if (scope === "day") {
+    const day = activePlan().days.find(d => d.id === parent);
+    if (day) list = day.tasks;
+  }
+  if (scope === "subject") {
+    const sub = state.subjects.find(s => s.id === parent);
+    if (sub) list = sub.tasks;
+  }
+  if (scope === "language") {
+    const lang = state.languages.find(l => l.id === parent);
+    if (lang) list = lang.tasks;
+  }
+  if (scope === "track") {
+    const track = state.tracks.find(t => t.id === parent);
+    if (track) list = track.tasks;
+  }
+  if (scope === "cyber") {
+    const phase = state.cyber.find(p => p.id === parent);
+    if (phase) list = phase.tasks;
+  }
+  if (scope === "todo") {
+    list = state.todos;
+  }
+  return list.find(t => t.id === id);
 }
 
-function deleteTask(scope, parent, id) {
-  if (scope === "day") activePlan().days.find(item => item.id === parent).tasks = activePlan().days.find(item => item.id === parent).tasks.filter(task => task.id !== id);
-  if (scope === "subject") state.subjects.find(item => item.id === parent).tasks = state.subjects.find(item => item.id === parent).tasks.filter(task => task.id !== id);
-  if (scope === "language") state.languages.find(item => item.id === parent).tasks = state.languages.find(item => item.id === parent).tasks.filter(task => task.id !== id);
-  if (scope === "track") state.tracks.find(item => item.id === parent).tasks = state.tracks.find(item => item.id === parent).tasks.filter(task => task.id !== id);
-  if (scope === "cyber") state.cyber.find(item => item.id === parent).tasks = state.cyber.find(item => item.id === parent).tasks.filter(task => task.id !== id);
-  if (scope === "todo") state.todos = state.todos.filter(task => task.id !== id);
-}
-
-function addTask(scope, parent, textValue, recurrence = 0) {
+function addTask(scope, parent, textValue, recurrence = 0, targetDate = null) {
   const task = { 
     id: uid(scope), 
     text: txt(textValue, textValue), 
     done: false, 
     recurrence: parseInt(recurrence) || 0,
-    lastDoneDate: null 
+    lastDoneDate: null,
+    createdAt: new Date().toISOString()
   };
+  if (targetDate) task.targetDate = targetDate;
+  
+  addToSystemLog('add', `Added task: ${textValue} in ${scope}`);
   if (scope === "day") activePlan().days.find(item => item.id === parent)?.tasks.push(task);
   if (scope === "subject") state.subjects.find(item => item.id === parent)?.tasks.push(task);
   if (scope === "language") state.languages.find(item => item.id === parent)?.tasks.push(task);
   if (scope === "track") state.tracks.find(item => item.id === parent)?.tasks.push(task);
   if (scope === "cyber") state.cyber.find(item => item.id === parent)?.tasks.push(task);
   if (scope === "todo") state.todos.push(task);
+}
+
+function deleteTask(scope, parent, id) {
+  if (scope === "day") {
+    const day = activePlan().days.find(d => d.id === parent);
+    if (day) day.tasks = day.tasks.filter(t => t.id !== id);
+  }
+  if (scope === "subject") {
+    const sub = state.subjects.find(s => s.id === parent);
+    if (sub) sub.tasks = sub.tasks.filter(t => t.id !== id);
+  }
+  if (scope === "language") {
+    const lang = state.languages.find(l => l.id === parent);
+    if (lang) lang.tasks = lang.tasks.filter(t => t.id !== id);
+  }
+  if (scope === "track") {
+    const track = state.tracks.find(t => t.id === parent);
+    if (track) track.tasks = track.tasks.filter(t => t.id !== id);
+  }
+  if (scope === "cyber") {
+    const phase = state.cyber.find(p => p.id === parent);
+    if (phase) phase.tasks = phase.tasks.filter(t => t.id !== id);
+  }
+  if (scope === "todo") {
+    state.todos = state.todos.filter(t => t.id !== id);
+  }
+  saveState();
 }
 
 function importSubjectObject(subject) {
@@ -2388,8 +2644,10 @@ document.addEventListener("click", async event => {
   }
 
   if (action === "delete-task") {
-    deleteTask(actionEl.dataset.scope, actionEl.dataset.parent, actionEl.dataset.id);
-    render();
+    if (confirm(tr("copy.deleteConfirm"))) {
+      deleteTask(actionEl.dataset.scope, actionEl.dataset.parent, actionEl.dataset.id);
+      render();
+    }
   }
 
   if (action === "delete-grade") {
@@ -2553,13 +2811,84 @@ document.addEventListener("click", async event => {
   }
 
   if (action === "delete-module") {
-    const subject = state.subjects.find(s => s.id === actionEl.dataset.subject);
-    if (!subject) return;
     if (await confirmAction(lang() === "ar" ? "حذف هذا المحتوى؟" : "Delete this content?")) {
-      subject.modules = subject.modules.filter(m => m.id !== actionEl.dataset.module);
+      const sid = actionEl.dataset.subject;
+      const lid = actionEl.dataset.language;
+      const mid = actionEl.dataset.module;
+      if (sid) {
+        const sub = state.subjects.find(s => s.id === sid);
+        if (sub) sub.modules = sub.modules.filter(m => m.id !== mid);
+      } else if (lid) {
+        const lan = state.languages.find(l => l.id === lid);
+        if (lan) lan.modules = lan.modules.filter(m => m.id !== mid);
+      }
       saveState();
       render();
     }
+  }
+
+  if (action === "clear-plan-date") {
+    state.activePlanDate = "";
+    render();
+  }
+
+  if (action === "set-journal-day") {
+    state.activeJournalId = actionEl.dataset.id;
+    render();
+  }
+
+  if (action === "delete-daily-log-specific") {
+    const time = actionEl.dataset.time;
+    const dayId = actionEl.dataset.day;
+    if (state.dailyDone && state.dailyDone[dayId]) {
+      state.dailyDone[dayId] = state.dailyDone[dayId].filter(it => it.time !== time);
+      saveState();
+      render();
+    }
+  }
+
+  if (action === "delete-daily-log") {
+    const time = actionEl.dataset.time;
+    const todayId = getLocalTodayId();
+    if (state.dailyDone && state.dailyDone[todayId]) {
+      state.dailyDone[todayId] = state.dailyDone[todayId].filter(it => it.time !== time);
+      saveState();
+      render();
+    }
+  }
+
+  if (action === "delete-subject" && await confirmAction(tr("resetConfirm"))) {
+    state.subjects = state.subjects.filter(s => s.id !== actionEl.dataset.id);
+    saveState();
+    render();
+  }
+
+  if (action === "delete-language" && await confirmAction(tr("resetConfirm"))) {
+    state.languages = state.languages.filter(l => l.id !== actionEl.dataset.id);
+    saveState();
+    render();
+  }
+
+  if (action === "edit-subject") {
+    const sub = state.subjects.find(s => s.id === actionEl.dataset.id);
+    if (!sub) return;
+    const newName = await ask(lang() === "ar" ? "اسم المادة الجديد:" : "New subject name:", loc(sub.name));
+    if (newName) sub.name = txt(newName, newName);
+    const newCode = await ask(lang() === "ar" ? "كود المادة الجديد:" : "New subject code:", sub.code);
+    if (newCode) sub.code = newCode;
+    saveState();
+    render();
+  }
+
+  if (action === "edit-language") {
+    const lan = state.languages.find(l => l.id === actionEl.dataset.id);
+    if (!lan) return;
+    const newTitle = await ask(lang() === "ar" ? "عنوان اللغة الجديد:" : "New language title:", loc(lan.title));
+    if (newTitle) lan.title = txt(newTitle, newTitle);
+    const newSub = await ask(lang() === "ar" ? "الوصف الجديد:" : "New subtitle:", loc(lan.subtitle));
+    if (newSub) lan.subtitle = txt(newSub, newSub);
+    saveState();
+    render();
   }
 
   if (action === "delete-section") {
@@ -2820,16 +3149,25 @@ document.addEventListener("change", async event => {
       // If task is marked done and it's from a technical track (not subject/plan)
       // ask if it should be added to CV
       const technicalScopes = ["cyber", "language", "track"];
-      if (task.done && technicalScopes.includes(taskBox.dataset.scope)) {
-        if (await confirmAction(tr("copy.addToCv"))) {
-          task.inCv = true;
-          showToast(tr("copy.cvSaved"));
+      
+      if (task.done) {
+        addToDailyDone(loc(task.text), taskBox.dataset.scope);
+        addToSystemLog('complete', `Completed task: ${loc(task.text)} in ${taskBox.dataset.scope}`);
+        
+        if (technicalScopes.includes(taskBox.dataset.scope)) {
+          if (await confirmAction(tr("copy.addToCv"))) {
+            task.inCv = true;
+            showToast(tr("copy.cvSaved"));
+          } else {
+            task.inCv = false;
+            showToast(tr("copy.saved"));
+          }
         } else {
-          task.inCv = false;
           showToast(tr("copy.saved"));
         }
       } else {
-        showToast(task.done ? tr("copy.saved") : tr("copy.saved"));
+        addToSystemLog('undo', `Unchecked task: ${loc(task.text)} in ${taskBox.dataset.scope}`);
+        showToast(tr("copy.saved"));
       }
       
       saveState();
@@ -2975,17 +3313,27 @@ document.addEventListener("submit", async event => {
   const type = form.dataset.form;
   const textValue = String(data.get("text") || "").trim();
 
+  if (type === "log-activity-direct" && textValue) {
+    addToDailyDone(textValue, "journal");
+    addToSystemLog('journal', `Direct Log: ${textValue}`);
+    form.reset();
+    render();
+    return;
+  }
+  
   if (type.startsWith("add-") && type.endsWith("-task") && textValue) {
+    const targetDate = String(data.get("targetDate") || "").trim();
     const rec = await ask(isAr ? "كم يوم يتكرر؟ (0=مرة، 1=يومي، 7=أسبوعي):" : "Repeat every X days? (0=once, 1=daily, 7=weekly):", "0");
-    addTask(type.split("-")[1], form.dataset.parent, textValue, rec);
+    addTask(type.split("-")[1], form.dataset.parent, textValue, rec, targetDate);
     saveState();
     render();
     return;
   }
   
   if (type === "add-todo" && textValue) {
+    const targetDate = String(data.get("targetDate") || "").trim();
     const rec = await ask(isAr ? "كم يوم يتكرر؟ (0=مرة، 1=يومي، 7=أسبوعي):" : "Repeat every X days? (0=once, 1=daily, 7=weekly):", "0");
-    addTask("todo", "", textValue, rec);
+    addTask("todo", "", textValue, rec, targetDate);
     saveState();
     render();
     return;
@@ -3130,10 +3478,16 @@ state = loadState();
 checkRecurringTasks();
 let timerInterval = null;
 render();
+
 document.addEventListener("input", event => {
-  const searchInput = event.target.closest('[data-action="global-search"]');
-  if (searchInput) {
-    state.globalSearch = searchInput.value;
-    updateGlobalTasksDOM();
+  const jumpDate = event.target.closest('[data-action="jump-to-journal-date"]');
+  if (jumpDate) {
+    state.activeJournalId = jumpDate.value;
+    render();
+  }
+  const jumpPlanDate = event.target.closest('[data-action="jump-to-plan-date"]');
+  if (jumpPlanDate) {
+    state.activePlanDate = jumpPlanDate.value;
+    render();
   }
 });
