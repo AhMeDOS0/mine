@@ -1511,9 +1511,14 @@ function renderModuleCard(item, subjectId) {
           <button class="delete-btn" data-action="remove-module-pdf" data-module="${esc(item.id)}" type="button" style="width:20px;height:20px;font-size:12px;padding:0" title="${isAr ? 'حذف الملف' : 'Remove file'}">×</button>
         </div>
       ` : ""}
-      <div class="file-upload-wrap" style="margin:8px 0">
-        <div class="file-upload-btn" style="background:var(--surface);border:1px dashed var(--line)">\u{1F4CE} ${isAr ? "إضافة رابط / ملف" : "Add Link / File"}</div>
-        <input type="file" accept=".pdf" data-action="upload-module-pdf" data-module="${esc(item.id)}">
+      <div style="display:flex;gap:8px;margin:8px 0">
+        <button class="secondary-btn" data-action="add-pdf-link" data-module="${esc(item.id)}" type="button" style="flex:1;font-size:12px;padding:6px 10px;border-style:dashed;background:var(--surface);color:var(--ink)">
+          \u{1F4CE} ${isAr ? "إضافة رابط PDF" : "Add PDF Link"}
+        </button>
+        <div class="file-upload-wrap">
+          <div class="file-upload-btn" style="padding:6px 10px;font-size:14px;background:transparent;border:1px dashed var(--line);min-width:40px" title="${isAr ? 'رفع ملف من الجهاز' : 'Upload file from PC'}">\u{1F4C2}</div>
+          <input type="file" accept=".pdf" data-action="upload-module-pdf" data-module="${esc(item.id)}">
+        </div>
       </div>
       <h4>${esc(tr("labels.outcomes"))}</h4>
       <ul>${(item.topics || []).map(topic => `<li style="white-space: pre-wrap; margin-bottom: 6px;">${esc(loc(topic))}</li>`).join("")}</ul>
@@ -2866,6 +2871,19 @@ document.addEventListener("click", async event => {
       plan.days = plan.days.filter(d => d.id !== actionEl.dataset.id);
       saveState();
       render();
+    }
+  }
+
+  if (action === "add-pdf-link") {
+    const res = findModule(actionEl.dataset.module);
+    if (res) {
+      const link = await ask(lang() === "ar" ? "أدخل رابط PDF (Drive, etc):" : "Enter PDF Link (Drive, etc):");
+      if (link) {
+        res.mod.pdfUrl = link;
+        res.mod.pdfName = link.split("/").pop();
+        saveState();
+        render();
+      }
     }
   }
 
