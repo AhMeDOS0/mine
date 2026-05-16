@@ -1505,25 +1505,67 @@ function renderModuleCard(item, subjectId) {
           <button class="delete-btn" data-action="delete-module" data-subject="${esc(sid)}" data-module="${esc(item.id)}" type="button" style="width:26px;height:26px;font-size:11px">x</button>
         </div>
       </div>
-      ${(item.pdfData || item.pdfUrl) ? `
-        <div style="display:flex;align-items:center;gap:6px;margin:4px 0">
-          <a class="pdf-badge" href="${item.pdfData || item.pdfUrl}" target="_blank" rel="noreferrer" style="margin:0">\u{1F4C4} ${esc(item.pdfName || "PDF")}</a>
-          <button class="delete-btn" data-action="remove-module-pdf" data-module="${esc(item.id)}" type="button" style="width:20px;height:20px;font-size:12px;padding:0" title="${isAr ? 'حذف الملف' : 'Remove file'}">×</button>
-        </div>
-      ` : ""}
+      <div class="resources-list" style="display:flex;flex-wrap:wrap;gap:8px;margin:8px 0">
+        ${(item.pdfData || item.pdfUrl) ? `
+          <div style="display:flex;align-items:center;gap:4px">
+            <a class="pdf-badge" href="${item.pdfData || item.pdfUrl}" target="_blank" rel="noreferrer" style="margin:0">\u{1F4C4} ${esc(item.pdfName || "PDF")}</a>
+            <button class="delete-btn" data-action="remove-module-pdf" data-module="${esc(item.id)}" type="button" style="width:18px;height:18px;font-size:10px;padding:0">×</button>
+          </div>
+        ` : ""}
+        ${(item.resources || []).map((res, ri) => `
+          <div style="display:flex;align-items:center;gap:4px">
+            <a class="pdf-badge" href="${res.data || res.url}" target="_blank" rel="noreferrer" style="margin:0; background:var(--accent-2)">\u{1F4C4} ${esc(res.name || "Resource")}</a>
+            <button class="delete-btn" data-action="remove-resource" data-module="${esc(item.id)}" data-index="${ri}" type="button" style="width:18px;height:18px;font-size:10px;padding:0">×</button>
+          </div>
+        `).join("")}
+      </div>
+
       <div style="display:flex;gap:8px;margin:8px 0">
-        <button class="secondary-btn" data-action="add-pdf-link" data-module="${esc(item.id)}" type="button" style="flex:1;font-size:12px;padding:6px 10px;border-style:dashed;background:var(--surface);color:var(--ink)">
-          \u{1F4CE} ${isAr ? "إضافة رابط PDF" : "Add PDF Link"}
+        <button class="secondary-btn" data-action="add-resource-link" data-module="${esc(item.id)}" type="button" style="flex:1;font-size:11px;padding:5px 8px;border-style:dashed;background:var(--surface);color:var(--ink)">
+          + ${isAr ? "رابط جديد" : "Add Link"}
         </button>
         <div class="file-upload-wrap">
-          <div class="file-upload-btn" style="padding:6px 10px;font-size:14px;background:transparent;border:1px dashed var(--line);min-width:40px" title="${isAr ? 'رفع ملف من الجهاز' : 'Upload file from PC'}">\u{1F4C2}</div>
-          <input type="file" accept=".pdf" data-action="upload-module-pdf" data-module="${esc(item.id)}">
+          <div class="file-upload-btn" style="padding:5px 8px;font-size:12px;background:transparent;border:1px dashed var(--line);min-width:34px" title="${isAr ? 'رفع ملف' : 'Upload File'}">\u{1F4C2}</div>
+          <input type="file" accept=".pdf" data-action="upload-resource-file" data-module="${esc(item.id)}">
         </div>
       </div>
       <h4>${esc(tr("labels.outcomes"))}</h4>
       <ul>${(item.topics || []).map(topic => `<li style="white-space: pre-wrap; margin-bottom: 6px;">${esc(loc(topic))}</li>`).join("")}</ul>
       ${(item.practice || []).length ? `<h4>${esc(tr("labels.practice"))}</h4><ul>${item.practice.map(p => `<li>${esc(loc(p))}</li>`).join("")}</ul>` : ""}
-      ${sections.length ? `<div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--line)"><h4 style="color:var(--accent);font-size:13px">${isAr ? "\u0627\u0644\u0623\u0642\u0633\u0627\u0645" : "Sections"}</h4>${sections.map((sec, si) => `<div style="margin:6px 0;padding:8px;border-radius:var(--radius);background:var(--surface-2);display:flex;align-items:center;justify-content:space-between;gap:8px"><div style="flex:1"><strong style="font-size:13px">${esc(loc(sec.title))}</strong>${sec.pdfName ? ` <a class="pdf-badge" style="font-size:10px" ${sec.pdfData ? 'href="' + sec.pdfData + '" target="_blank"' : ''}>\u{1F4C4} ${esc(sec.pdfName)}</a>` : ""}</div><button class="delete-btn" data-action="delete-section" data-subject="${esc(sid)}" data-module="${esc(item.id)}" data-index="${si}" type="button" style="width:22px;height:22px;font-size:10px">x</button></div>`).join("")}</div>` : ""}
+      ${sections.length ? `
+        <div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--line)">
+          <h4 style="color:var(--accent);font-size:13px">${isAr ? "\u0627\u0644\u0623\u0642\u0633\u0627\u0645" : "Sections"}</h4>
+          ${sections.map((sec, si) => `
+            <div style="margin:8px 0;padding:8px;border-radius:var(--radius);background:var(--surface-2);border:1px solid var(--line)">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                <strong style="font-size:13px">${esc(loc(sec.title))}</strong>
+                <div style="display:flex;gap:4px">
+                  <div class="file-upload-wrap">
+                    <div class="file-upload-btn" style="padding:2px 6px;font-size:11px;min-width:auto;border:none">\u{1F4C2}</div>
+                    <input type="file" accept=".pdf" data-action="upload-section-resource" data-module="${esc(item.id)}" data-index="${si}">
+                  </div>
+                  <button class="secondary-btn" data-action="add-section-link" data-module="${esc(item.id)}" data-index="${si}" style="padding:2px 6px;font-size:11px;min-height:auto;min-width:auto">\u{1F4CE}</button>
+                  <button class="delete-btn" data-action="delete-section" data-subject="${esc(sid)}" data-module="${esc(item.id)}" data-index="${si}" type="button" style="width:20px;height:20px;font-size:10px">×</button>
+                </div>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">
+                ${(sec.pdfData || sec.pdfUrl) ? `
+                  <div style="display:flex;align-items:center;gap:2px">
+                    <a class="pdf-badge" style="font-size:9px;padding:2px 6px;margin:0" href="${sec.pdfData || sec.pdfUrl}" target="_blank">\u{1F4C4} ${esc(sec.pdfName || "PDF")}</a>
+                    <button class="delete-btn" data-action="remove-section-old-pdf" data-module="${esc(item.id)}" data-index="${si}" style="width:14px;height:14px;font-size:8px;padding:0">×</button>
+                  </div>
+                ` : ""}
+                ${(sec.resources || []).map((sr, sri) => `
+                  <div style="display:flex;align-items:center;gap:2px">
+                    <a class="pdf-badge" style="font-size:9px;padding:2px 6px;margin:0;background:var(--indigo)" href="${sr.data || sr.url}" target="_blank">\u{1F4C4} ${esc(sr.name || "Res")}</a>
+                    <button class="delete-btn" data-action="remove-section-resource" data-module="${esc(item.id)}" data-sindex="${si}" data-rindex="${sri}" style="width:14px;height:14px;font-size:8px;padding:0">×</button>
+                  </div>
+                `).join("")}
+              </div>
+            </div>
+          `).join("")}
+        </div>
+      ` : ""}
       <details style="margin-top:8px"><summary class="small" style="cursor:pointer;color:var(--accent);font-weight:700">+ ${isAr ? "\u0625\u0636\u0627\u0641\u0629 \u0642\u0633\u0645" : "Add Section"}</summary><form data-form="add-section" data-subject="${esc(sid)}" data-module="${esc(item.id)}" style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center"><input name="secTitle" placeholder="${isAr ? '\u0627\u0633\u0645 \u0627\u0644\u0642\u0633\u0645' : 'Section name'}" required style="flex:1;min-width:140px;min-height:32px;padding:4px 8px;font-size:12px"><div class="file-upload-wrap"><div class="file-upload-btn" style="min-height:32px;padding:4px 10px;font-size:11px">\u{1F4CE} PDF</div><input type="file" accept=".pdf" name="secPdf" class="sec-pdf-input"></div><button class="secondary-btn" type="submit" style="min-height:32px;padding:4px 10px;font-size:12px">${isAr ? "\u0623\u0636\u0641" : "Add"}</button></form></details>
     </article>
   `;
@@ -2740,16 +2782,69 @@ document.addEventListener("click", async event => {
     if (semester) {
       semester.courses = semester.courses.filter(course => course.id !== actionEl.dataset.id);
     }
-    render();
+    render();  }
+
+  if (action === "add-resource-link") {
+    const res = findModule(actionEl.dataset.module);
+    if (res) {
+      const link = await ask(lang() === "ar" ? "أدخل رابط PDF أو الفيديو:" : "Enter PDF or Video Link:");
+      if (link) {
+        if (!res.mod.resources) res.mod.resources = [];
+        res.mod.resources.push({ name: link.split("/").pop().slice(0, 20), url: link });
+        saveState(); render();
+      }
+    }
+    return;
   }
 
-  if (action === "delete-semester") {
-    state.cgpa.semesters = state.cgpa.semesters.filter(s => s.id !== actionEl.dataset.id);
-    render();
+  if (action === "remove-resource") {
+    const res = findModule(actionEl.dataset.module);
+    const idx = parseInt(actionEl.dataset.index);
+    if (res && res.mod.resources) {
+      res.mod.resources.splice(idx, 1);
+      saveState(); render();
+    }
+    return;
   }
 
+  if (action === "add-section-link") {
+    const res = findModule(actionEl.dataset.module);
+    const si = parseInt(actionEl.dataset.index);
+    if (res && res.mod.sections[si]) {
+      const link = await ask(lang() === "ar" ? "أدخل رابط القسم:" : "Enter Section Link:");
+      if (link) {
+        if (!res.mod.sections[si].resources) res.mod.sections[si].resources = [];
+        res.mod.sections[si].resources.push({ name: link.split("/").pop().slice(0, 15), url: link });
+        saveState(); render();
+      }
+    }
+    return;
+  }
 
-  if (action === "fill-template") {
+  if (action === "remove-section-resource") {
+    const res = findModule(actionEl.dataset.module);
+    const si = parseInt(actionEl.dataset.sindex);
+    const ri = parseInt(actionEl.dataset.rindex);
+    if (res && res.mod.sections[si]?.resources) {
+      res.mod.sections[si].resources.splice(ri, 1);
+      saveState(); render();
+    }
+    return;
+  }
+
+  if (action === "remove-section-old-pdf") {
+    const res = findModule(actionEl.dataset.module);
+    const si = parseInt(actionEl.dataset.index);
+    if (res && res.mod.sections[si]) {
+      res.mod.sections[si].pdfData = null;
+      res.mod.sections[si].pdfUrl = null;
+      res.mod.sections[si].pdfName = null;
+      saveState(); render();
+    }
+    return;
+  }
+
+  if (action === "add-pdf-link") {
     document.getElementById("subjectJsonInput").value = JSON.stringify(subjectTemplate(), null, 2);
   }
 
@@ -3345,6 +3440,31 @@ document.addEventListener("change", async event => {
       document.querySelectorAll(`[data-action='change-target'][data-id='${subject.id}']`).forEach(el => {
         el.value = targetSelect.value;
       });
+    }
+    return;
+  }
+
+  const resourceFile = event.target.closest("[data-action='upload-resource-file']");
+  if (resourceFile && resourceFile.files && resourceFile.files[0]) {
+    const res = findModule(resourceFile.dataset.module);
+    if (res) {
+      const file = resourceFile.files[0];
+      if (!res.mod.resources) res.mod.resources = [];
+      res.mod.resources.push({ name: file.name, data: await toBase64(file) });
+      saveState(); render();
+    }
+    return;
+  }
+
+  const secResourceFile = event.target.closest("[data-action='upload-section-resource']");
+  if (secResourceFile && secResourceFile.files && secResourceFile.files[0]) {
+    const res = findModule(secResourceFile.dataset.module);
+    const si = parseInt(secResourceFile.dataset.index);
+    if (res && res.mod.sections[si]) {
+      const file = secResourceFile.files[0];
+      if (!res.mod.sections[si].resources) res.mod.sections[si].resources = [];
+      res.mod.sections[si].resources.push({ name: file.name, data: await toBase64(file) });
+      saveState(); render();
     }
     return;
   }
