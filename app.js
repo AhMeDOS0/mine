@@ -1283,12 +1283,21 @@ function renderSubjects() {
           <div>
             <h2 style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
               ${esc(loc(selected.name))}
+              <div class="grade-badge" style="display:flex;align-items:center;background:var(--accent);color:white;padding:2px 10px;border-radius:6px;font-size:14px;font-weight:bold">
+                ${expectedGradeFromPercent(subjectGrade(selected).percent)}
+              </div>
               <div class="target-wrap" style="display:flex;align-items:center;background:var(--bg-card);padding:2px 8px;border-radius:6px;border:1px solid var(--border-color);font-size:14px;font-weight:normal">
                 <span class="small muted" style="${lang() === 'ar' ? 'margin-left:6px' : 'margin-right:6px'}">${esc(tr("labels.target"))}</span>
                 <select class="target-select" data-action="change-target" data-id="${esc(selected.id)}" style="background:transparent;border:none;padding:0;font-weight:bold;color:var(--accent)">${Object.keys(gradePoints).map(g => `<option value="${g}" ${selected.targetGrade === g ? "selected" : ""}>${g}</option>`).join("")}</select>
               </div>
             </h2>
-            <p class="muted" style="margin-top:4px">${esc(selected.code)} · ${esc(tr("labels.exam"))}: ${esc(formatDate(selected.exam.date))} · ${esc(loc(selected.exam.time))}</p>
+            <p class="muted" style="margin-top:4px">
+              ${esc(selected.code)} · 
+              <span class="editable-hours" data-action="edit-hours" data-id="${esc(selected.id)}" style="cursor:pointer;text-decoration:underline dotted;color:var(--accent)">
+                ${esc(tr("labels.hours"))}: ${esc(selected.hours)}
+              </span> · 
+              ${esc(tr("labels.exam"))}: ${esc(formatDate(selected.exam.date))} · ${esc(loc(selected.exam.time))}
+            </p>
           </div>
           <div class="inline-actions subject-hero-actions">
             ${selected.guideFile ? `<a class="guide-open-btn" href="guide-viewer.html?guide=${esc(selected.guideFile)}" target="_blank">\u{1F4D6} ${esc(tr("labels.fullGuide"))}</a>` : ''}
@@ -1316,7 +1325,7 @@ function renderSubjectCard(subject, activeId) {
     <div class="subject-card ${subject.tone || ""} ${subject.id === activeId ? "active" : ""}" data-action="select-subject" data-id="${esc(subject.id)}" role="button" tabindex="0">
       <div class="section-head">
         <div>
-          <h3>${esc(loc(subject.name))} <span class="chip accent" style="font-size:11px;vertical-align:middle;margin-inline-start:6px">${esc(subject.targetGrade)}</span></h3>
+          <h3>${esc(loc(subject.name))} <span class="chip accent" style="font-size:11px;vertical-align:middle;margin-inline-start:6px">${expectedGradeFromPercent(sg.percent)}</span></h3>
           <p class="small muted">${esc(subject.code)} · ${esc(tr("labels.hours"))}: ${esc(subject.hours)}</p>
         </div>
         <span class="chip">${sg.percent}%</span>
@@ -2509,7 +2518,18 @@ document.addEventListener("click", async event => {
     render();
   }
 
-    if (action === "timer-start" && !timerInterval) {
+  if (action === "edit-hours") {
+    const subject = state.subjects.find(s => s.id === actionEl.dataset.id);
+    if (!subject) return;
+    const newHours = await ask(lang() === "ar" ? "عدد الساعات:" : "Number of hours:", String(subject.hours));
+    if (newHours !== null && !isNaN(Number(newHours))) {
+      subject.hours = Number(newHours);
+      saveState();
+      render();
+    }
+  }
+
+  if (action === "timer-start" && !timerInterval) {
     timerInterval = window.setInterval(() => {
       state.focusSeconds = Math.max(0, state.focusSeconds - 1);
       const timerText = document.getElementById("timerText");
