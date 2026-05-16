@@ -1506,7 +1506,12 @@ function renderModuleCard(item, subjectId) {
         </div>
       </div>
       <p class="small muted">${esc(item.file || "")}</p>
-      ${(item.pdfData || item.pdfUrl) ? `<a class="pdf-badge" href="${item.pdfData || item.pdfUrl}" target="_blank" rel="noreferrer">\u{1F4C4} ${esc(item.pdfName || "PDF")}</a>` : ""}
+      ${(item.pdfData || item.pdfUrl) ? `
+        <div style="display:flex;align-items:center;gap:6px;margin:4px 0">
+          <a class="pdf-badge" href="${item.pdfData || item.pdfUrl}" target="_blank" rel="noreferrer" style="margin:0">\u{1F4C4} ${esc(item.pdfName || "PDF")}</a>
+          <button class="delete-btn" data-action="remove-module-pdf" data-module="${esc(item.id)}" type="button" style="width:20px;height:20px;font-size:12px;padding:0" title="${isAr ? 'حذف الملف' : 'Remove file'}">×</button>
+        </div>
+      ` : ""}
       <div class="file-upload-wrap" style="margin:8px 0">
         <div class="file-upload-btn">\u{1F4CE} ${isAr ? "\u0631\u0641\u0639 PDF" : "Upload PDF"}</div>
         <input type="file" accept=".pdf" data-action="upload-module-pdf" data-module="${esc(item.id)}">
@@ -2867,6 +2872,16 @@ document.addEventListener("click", async event => {
     render();
   }
 
+  if (action === "remove-module-pdf") {
+    const res = findModule(actionEl.dataset.module);
+    if (res) {
+      res.mod.pdfData = null;
+      res.mod.pdfUrl = null;
+      res.mod.pdfName = null;
+      saveState();
+      render();
+    }
+  }
   if (action === "delete-module") {
     if (await confirmAction(lang() === "ar" ? "حذف هذا المحتوى؟" : "Delete this content?")) {
       const sid = actionEl.dataset.subject;
