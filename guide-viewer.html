@@ -67,17 +67,18 @@
         // Remove any other imports
         jsxCode = jsxCode.replace(/import\s+.*from\s+["'].*["']\s*;?/g, '');
         // Replace export default with a global assignment
-        jsxCode = jsxCode.replace(/export\s+default\s+function\s+(\w+)/g, 'function $1');
+        jsxCode = jsxCode.replace(/export\s+default\s+function\s+(\w+)/g, 'window.GuideApp = $1; function $1');
 
         // Add the render call
         jsxCode += `
           ;(function(){
             const root = ReactDOM.createRoot(document.getElementById('root'));
-            const GuideApp = typeof DSGuide !== 'undefined' ? DSGuide
-                           : typeof TOCGuide !== 'undefined' ? TOCGuide
-                           : null;
+            const GuideApp = window.GuideApp 
+                           || (typeof DSGuide !== 'undefined' ? DSGuide : null)
+                           || (typeof TOCGuide !== 'undefined' ? TOCGuide : null)
+                           || (typeof CircuitsGuide !== 'undefined' ? CircuitsGuide : null);
             if (GuideApp) root.render(React.createElement(GuideApp));
-            else document.getElementById('root').innerHTML = '<div class="error"><h2>No guide component found</h2></div>';
+            else document.getElementById('root').innerHTML = '<div class="error"><h2>No guide component found</h2><p>Please ensure your component is named correctly (e.g., CircuitsGuide).</p></div>';
           })();
         `;
 
