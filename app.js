@@ -19,17 +19,22 @@ function getDaysBetween(d1, d2) {
 function checkRecurringTasks() {
   const todayId = getLocalTodayId();
   const allTasks = allTaskGroups().flatMap(g => g.tasks);
+  let changed = false;
   
   allTasks.forEach(task => {
     if (task.recurrence && task.done && task.lastDoneDate && task.lastDoneDate !== todayId) {
       const daysPassed = getDaysBetween(task.lastDoneDate, todayId);
       if (daysPassed >= task.recurrence) {
         task.done = false;
-        // Keep the old lastDoneDate if it's not yet time to reset again? 
-        // No, if we reset, we wait for the NEXT completion.
+        delete task.doneAt;
+        changed = true;
       }
     }
   });
+  
+  if (changed) {
+    saveState();
+  }
 }
 
 function showCustomModal(options) {
@@ -82,6 +87,21 @@ function closeModal(value) {
   overlay.classList.remove("show");
   if (modalResolve) modalResolve(value);
   modalResolve = null;
+}
+
+function showToast(message) {
+  const toast = document.getElementById("toast");
+  if (!toast) return;
+  toast.textContent = message;
+  toast.classList.add("show");
+  
+  if (window.toastTimeout) {
+    clearTimeout(window.toastTimeout);
+  }
+  
+  window.toastTimeout = setTimeout(() => {
+    toast.classList.remove("show");
+  }, 3000);
 }
 
 async function ask(message, defaultValue = "") {
@@ -3364,10 +3384,17 @@ document.addEventListener("change", async event => {
     const task = findTask(taskBox.dataset.scope, taskBox.dataset.parent, taskBox.dataset.id);
     if (task) {
       task.done = taskBox.checked;
+      const todayStr = new Date().toISOString().slice(0, 10);
       if (task.done) {
-        task.doneAt = new Date().toISOString().slice(0, 10);
+        task.doneAt = todayStr;
+        if (task.recurrence) {
+          task.lastDoneDate = todayStr;
+        }
       } else {
         delete task.doneAt;
+        if (task.recurrence) {
+          task.lastDoneDate = null;
+        }
       }
       
       // If task is marked done and it's from a technical track (not subject/plan)
