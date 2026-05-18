@@ -1501,6 +1501,11 @@ function renderAllModules(subject) {
         </div>
       </form>
     </details>
+
+    <div class="search-wrap" style="margin-bottom:16px;">
+      <input type="text" id="lectureSearchInput" oninput="filterLectures()" placeholder="${isAr ? '🔍 ابحث عن محاضرة أو موضوع (مثال: Array, Pointer)...' : '🔍 Search lecture or topic (e.g. Array, Pointer)...'}" style="width:100%;min-height:42px;padding:8px 16px;border-radius:var(--radius);border:1px solid var(--line);background:var(--surface-2);color:var(--ink);font-family:inherit;font-size:14px;box-shadow:inset 0 2px 4px rgba(0,0,0,0.15)">
+    </div>
+
     <h3 style="margin-bottom:10px">${isAr ? "\u0627\u0644\u0645\u062d\u0627\u0636\u0631\u0627\u062a" : "Lectures"} (${lectures.length})</h3>
     <div class="module-grid">${lectures.map(item => renderModuleCard(item, subject.id)).join("")}</div>
     ${sheets.length ? `<h3 style="margin-top:20px;margin-bottom:10px">${isAr ? "\u0627\u0644\u0634\u064a\u062a\u0627\u062a \u0648\u0627\u0644\u0644\u0627\u0628\u0627\u062a" : "Sheets & Labs"} (${sheets.length})</h3><div class="module-grid">${sheets.map(item => renderModuleCard(item, subject.id)).join("")}</div>` : ""}
@@ -1512,12 +1517,16 @@ function renderModuleCard(item, subjectId) {
   const isAr = lang() === "ar";
   const sections = item.sections || [];
   const sid = subjectId || "";
+  const completed = item.completed || false;
   return `
-    <article class="module-card">
+    <article class="module-card ${completed ? 'completed' : ''}" data-module-id="${esc(item.id)}">
       <div class="section-head">
-        <div>
-          <span class="chip ${item.type === "lecture" ? "accent" : "amber"}">${esc(item.type)}</span>
-          <h3 style="margin-top:8px">${esc(loc(item.title))}</h3>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <input type="checkbox" class="study-checkbox" data-action="toggle-module-complete" data-subject="${esc(sid)}" data-module="${esc(item.id)}" ${completed ? 'checked' : ''} title="${isAr ? 'تمت المذاكرة' : 'Mark as Studied'}">
+          <div>
+            <span class="chip ${item.type === "lecture" ? "accent" : "amber"}">${esc(item.type)}</span>
+            <h3 style="margin-top:8px">${esc(loc(item.title))}</h3>
+          </div>
         </div>
         <div style="display:flex;align-items:center;gap:6px">
           <span class="chip">${esc(item.pages)}p</span>
@@ -1551,57 +1560,67 @@ function renderModuleCard(item, subjectId) {
           <input type="file" accept=".pdf" data-action="upload-resource-file" data-module="${esc(item.id)}">
         </div>
       </div>
-      <h4>${esc(tr("labels.outcomes"))}</h4>
-      <ul>${(item.topics || []).map(topic => `<li style="white-space: pre-wrap; margin-bottom: 6px;">${esc(loc(topic))}</li>`).join("")}</ul>
-      ${(item.practice || []).length ? `<h4>${esc(tr("labels.practice"))}</h4><ul>${item.practice.map(p => `<li>${esc(loc(p))}</li>`).join("")}</ul>` : ""}
-      ${sections.length ? `
-        <div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--line)">
-          <h4 style="color:var(--accent);font-size:13px">${isAr ? "\u0627\u0644\u0623\u0642\u0633\u0627\u0645" : "Sections"}</h4>
-          ${sections.map((sec, si) => `
-            <div style="margin:8px 0;padding:8px;border-radius:var(--radius);background:var(--surface-2);border:1px solid var(--line)">
-              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-                <strong style="font-size:13px">${esc(loc(sec.title))}</strong>
-                <div style="display:flex;gap:4px">
-                  <div class="file-upload-wrap">
-                    <div class="file-upload-btn" style="padding:2px 6px;font-size:11px;min-width:auto;border:none">\u{1F4C2}</div>
-                    <input type="file" accept=".pdf" data-action="upload-section-resource" data-module="${esc(item.id)}" data-index="${si}">
+
+      <div style="display:flex;justify-content:center;margin-top:10px;margin-bottom:2px">
+        <button class="expand-toggle-btn" data-action="toggle-module-expand" type="button">
+          <span class="arrow-icon">▼</span>
+          <span class="expand-btn-text">${isAr ? "عرض التفاصيل" : "Show Details"}</span>
+        </button>
+      </div>
+
+      <div class="module-details-content">
+        <h4>${esc(tr("labels.outcomes"))}</h4>
+        <ul>${(item.topics || []).map(topic => `<li style="white-space: pre-wrap; margin-bottom: 6px;">${esc(loc(topic))}</li>`).join("")}</ul>
+        ${(item.practice || []).length ? `<h4>${esc(tr("labels.practice"))}</h4><ul>${item.practice.map(p => `<li>${esc(loc(p))}</li>`).join("")}</ul>` : ""}
+        ${sections.length ? `
+          <div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--line)">
+            <h4 style="color:var(--accent);font-size:13px">${isAr ? "\u0627\u0644\u0623\u0642\u0633\u0627\u0645" : "Sections"}</h4>
+            ${sections.map((sec, si) => `
+              <div style="margin:8px 0;padding:8px;border-radius:var(--radius);background:var(--surface-2);border:1px solid var(--line)">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                  <strong style="font-size:13px">${esc(loc(sec.title))}</strong>
+                  <div style="display:flex;gap:4px">
+                    <div class="file-upload-wrap">
+                      <div class="file-upload-btn" style="padding:2px 6px;font-size:11px;min-width:auto;border:none">\u{1F4C2}</div>
+                      <input type="file" accept=".pdf" data-action="upload-section-resource" data-module="${esc(item.id)}" data-index="${si}">
+                    </div>
+                    <button class="secondary-btn" data-action="add-section-link" data-module="${esc(item.id)}" data-index="${si}" style="padding:2px 6px;font-size:11px;min-height:auto;min-width:auto">\u{1F4CE}</button>
+                    <button class="delete-btn" data-action="delete-section" data-subject="${esc(sid)}" data-module="${esc(item.id)}" data-index="${si}" type="button" style="width:20px;height:20px;font-size:10px">×</button>
                   </div>
-                  <button class="secondary-btn" data-action="add-section-link" data-module="${esc(item.id)}" data-index="${si}" style="padding:2px 6px;font-size:11px;min-height:auto;min-width:auto">\u{1F4CE}</button>
-                  <button class="delete-btn" data-action="delete-section" data-subject="${esc(sid)}" data-module="${esc(item.id)}" data-index="${si}" type="button" style="width:20px;height:20px;font-size:10px">×</button>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">
+                  ${(sec.pdfData || sec.pdfUrl) ? `
+                    <div style="display:flex;align-items:center;gap:2px">
+                      <a class="pdf-badge" style="font-size:9px;padding:2px 6px;margin:0" href="${sec.pdfData || sec.pdfUrl}" target="_blank">\u{1F4C4} ${esc(sec.pdfName || "PDF")}</a>
+                      <button class="delete-btn" data-action="remove-section-old-pdf" data-module="${esc(item.id)}" data-index="${si}" style="width:14px;height:14px;font-size:8px;padding:0">×</button>
+                    </div>
+                  ` : ""}
+                  ${(sec.resources || []).map((sr, sri) => `
+                    <div style="display:flex;align-items:center;gap:2px">
+                      <a class="pdf-badge" style="font-size:9px;padding:2px 6px;margin:0;background:var(--indigo);color:white;border:none" href="${sr.data || sr.url}" target="_blank">
+                        \u{1F4C4} ${esc(loc(sec.title))} ${sri > 0 ? `(${sri + 1})` : ""}
+                      </a>
+                      <button class="delete-btn" data-action="remove-section-resource" data-module="${esc(item.id)}" data-sindex="${si}" data-rindex="${sri}" style="width:14px;height:14px;font-size:8px;padding:0">×</button>
+                    </div>
+                  `).join("")}
                 </div>
               </div>
-              <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">
-                ${(sec.pdfData || sec.pdfUrl) ? `
-                  <div style="display:flex;align-items:center;gap:2px">
-                    <a class="pdf-badge" style="font-size:9px;padding:2px 6px;margin:0" href="${sec.pdfData || sec.pdfUrl}" target="_blank">\u{1F4C4} ${esc(sec.pdfName || "PDF")}</a>
-                    <button class="delete-btn" data-action="remove-section-old-pdf" data-module="${esc(item.id)}" data-index="${si}" style="width:14px;height:14px;font-size:8px;padding:0">×</button>
-                  </div>
-                ` : ""}
-                ${(sec.resources || []).map((sr, sri) => `
-                  <div style="display:flex;align-items:center;gap:2px">
-                    <a class="pdf-badge" style="font-size:9px;padding:2px 6px;margin:0;background:var(--indigo);color:white;border:none" href="${sr.data || sr.url}" target="_blank">
-                      \u{1F4C4} ${esc(loc(sec.title))} ${sri > 0 ? `(${sri + 1})` : ""}
-                    </a>
-                    <button class="delete-btn" data-action="remove-section-resource" data-module="${esc(item.id)}" data-sindex="${si}" data-rindex="${sri}" style="width:14px;height:14px;font-size:8px;padding:0">×</button>
-                  </div>
-                `).join("")}
-              </div>
-            </div>
-          `).join("")}
-        </div>
-      ` : ""}
-      <details style="margin-top:8px">
-        <summary class="small" style="cursor:pointer;color:var(--accent);font-weight:700">+ ${isAr ? "\u0625\u0636\u0627\u0641\u0629 \u0642\u0633\u0645" : "Add Section"}</summary>
-        <form data-form="add-section" data-subject="${esc(sid)}" data-module="${esc(item.id)}" style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-          <input name="secTitle" placeholder="${isAr ? '\u0627\u0633\u0645 \u0627\u0644\u0642\u0633\u0645' : 'Section name'}" required style="flex:1;min-width:140px;min-height:32px;padding:4px 8px;font-size:12px">
-          <input name="secLink" placeholder="${isAr ? '\u0631\u0627\u0628\u0637 (Drive, etc)' : 'Link (Drive, etc)'}" style="flex:1;min-width:140px;min-height:32px;padding:4px 8px;font-size:12px">
-          <div class="file-upload-wrap">
-            <div class="file-upload-btn" style="min-height:32px;padding:4px 10px;font-size:14px;background:transparent;border:1px dashed var(--line)" title="${isAr ? 'رفع ملف' : 'Upload File'}">\u{1F4C2}</div>
-            <input type="file" accept=".pdf" name="secPdf" class="sec-pdf-input">
+            `).join("")}
           </div>
-          <button class="secondary-btn" type="submit" style="min-height:32px;padding:4px 10px;font-size:12px">${isAr ? "\u0623\u0636\u0641" : "Add"}</button>
-        </form>
-      </details>
+        ` : ""}
+        <details style="margin-top:8px">
+          <summary class="small" style="cursor:pointer;color:var(--accent);font-weight:700">+ ${isAr ? "\u0625\u0636\u0627\u0641\u0629 \u0642\u0633\u0645" : "Add Section"}</summary>
+          <form data-form="add-section" data-subject="${esc(sid)}" data-module="${esc(item.id)}" style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+            <input name="secTitle" placeholder="${isAr ? '\u0627\u0633\u0645 \u0627\u0644\u0642\u0633\u0645' : 'Section name'}" required style="flex:1;min-width:140px;min-height:32px;padding:4px 8px;font-size:12px">
+            <input name="secLink" placeholder="${isAr ? '\u0631\u0627\u0628\u0637 (Drive, etc)' : 'Link (Drive, etc)'}" style="flex:1;min-width:140px;min-height:32px;padding:4px 8px;font-size:12px">
+            <div class="file-upload-wrap">
+              <div class="file-upload-btn" style="min-height:32px;padding:4px 10px;font-size:14px;background:transparent;border:1px dashed var(--line)" title="${isAr ? 'رفع ملف' : 'Upload File'}">\u{1F4C2}</div>
+              <input type="file" accept=".pdf" name="secPdf" class="sec-pdf-input">
+            </div>
+            <button class="secondary-btn" type="submit" style="min-height:32px;padding:4px 10px;font-size:12px">${isAr ? "\u0623\u0636\u0641" : "Add"}</button>
+          </form>
+        </details>
+      </div>
     </article>
   `;
 }
@@ -2464,7 +2483,7 @@ function renderLogs() {
            <input type="date" value="${esc(currentId)}" data-action="jump-to-journal-date" style="background: var(--bg-card); border: 1px solid var(--line); color: var(--ink); padding: 6px 12px; border-radius: var(--radius); font-weight: 700; font-family: inherit; cursor: pointer;">
            <button class="secondary-btn" data-action="set-journal-day" data-id="${nextId}" title="${isAr ? "اليوم التالي" : "Next Day"}">→</button>
         </div>
-        <div class="log-list" style="margin-top: 15px;">
+        <div class="log-list scrollable-list" style="margin-top: 15px;">
           <p class="small muted" style="text-align: center; margin-bottom: 15px;">${isAr ? "إنجازات هذا اليوم" : "Achievements for this day"}</p>
           ${(function(){
             // Combine manual logs (dailyDone) and plan tasks that were finished
@@ -2501,7 +2520,7 @@ function renderLogs() {
         <div class="section-head">
           <h3>${isAr ? "نظرة عامة" : "Plan Overview"}</h3>
         </div>
-        <div class="log-list" style="max-height: 500px; overflow-y: auto;">
+        <div class="log-list scrollable-list">
           ${activePlan().days.slice().reverse().filter(d => d.id <= getLocalTodayId()).map(day => {
             const done = day.tasks.filter(t => t.done).length;
             const total = day.tasks.length;
@@ -2522,7 +2541,7 @@ function renderLogs() {
         <div class="section-head">
           <h3>${isAr ? "عمليات النظام" : "System Events"}</h3>
         </div>
-        <div class="log-list">
+        <div class="log-list scrollable-list">
           ${systemLogs.length > 0 ? systemLogs.slice().reverse().slice(0, 30).map(log => `
             <div class="log-card ${log.type}" style="padding: 8px; font-size: 12px;">
               <div class="log-time" style="min-width: 50px; font-size: 10px;">${new Date(log.time).toLocaleTimeString(ui[lang()].locale, { hour: '2-digit', minute: '2-digit' })}</div>
@@ -2752,6 +2771,45 @@ document.addEventListener("click", async event => {
   if (action === "toggle-theme") {
     state.settings.theme = state.settings.theme === "dark" ? "light" : "dark";
     render();
+  }
+
+  if (action === "toggle-module-complete") {
+    const sid = actionEl.dataset.subject;
+    const mid = actionEl.dataset.module;
+    const sub = state.subjects.find(s => s.id === sid);
+    if (sub) {
+      const mod = sub.modules.find(m => m.id === mid);
+      if (mod) {
+        mod.completed = actionEl.checked;
+        saveState();
+        
+        // Snappily update UI without full page re-render
+        const card = actionEl.closest(".module-card");
+        if (card) {
+          if (mod.completed) {
+            card.classList.add("completed");
+          } else {
+            card.classList.remove("completed");
+          }
+        }
+      }
+    }
+    return;
+  }
+
+  if (action === "toggle-module-expand") {
+    const card = actionEl.closest(".module-card");
+    if (card) {
+      card.classList.toggle("expanded");
+      const isExpanded = card.classList.contains("expanded");
+      const btnText = card.querySelector(".expand-btn-text");
+      if (btnText) {
+        btnText.textContent = isExpanded 
+          ? (lang() === "ar" ? "إخفاء التفاصيل" : "Hide Details") 
+          : (lang() === "ar" ? "عرض التفاصيل" : "Show Details");
+      }
+    }
+    return;
   }
 
   if (action === "toggle-lang") {
@@ -3784,6 +3842,24 @@ document.addEventListener("blur", event => {
 }, true);
 
 window.addEventListener("hashchange", render);
+
+window.filterLectures = function() {
+  const query = (document.getElementById("lectureSearchInput")?.value || "").toLowerCase().trim();
+  const cards = document.querySelectorAll(".module-card");
+  cards.forEach(card => {
+    const title = card.querySelector("h3") ? card.querySelector("h3").textContent.toLowerCase() : "";
+    const type = card.querySelector(".chip") ? card.querySelector(".chip").textContent.toLowerCase() : "";
+    const outcomesList = card.querySelectorAll("ul li");
+    let outcomesText = "";
+    outcomesList.forEach(li => outcomesText += li.textContent.toLowerCase() + " ");
+    
+    if (title.includes(query) || type.includes(query) || outcomesText.includes(query)) {
+      card.style.display = "";
+    } else {
+      card.style.display = "none";
+    }
+  });
+};
 
 let state;
 state = loadState();

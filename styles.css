@@ -1454,6 +1454,32 @@ select option { background-color: var(--surface); color: var(--ink); }
   margin-top: 10px;
 }
 
+.scrollable-list {
+  max-height: 480px;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+
+/* Premium Custom Scrollbars for lists */
+.scrollable-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollable-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollable-list::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 99px;
+}
+
+.scrollable-list::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
 .log-card {
   display: flex;
   gap: 15px;
@@ -1520,5 +1546,76 @@ html[dir="rtl"] .log-card.undo { border-left: 1px solid var(--line); border-righ
 .overdue {
   border-color: var(--amber) !important;
   background: color-mix(in srgb, var(--amber) 5%, var(--surface)) !important;
+}
+
+/* ── Collapsible Lecture Cards & Completed State ── */
+.module-card .module-details-content {
+  display: none;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
+}
+
+.module-card.expanded .module-details-content {
+  display: block;
+  animation: slideDown 0.25s ease both;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.expand-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  font-size: 11px;
+  font-weight: 800;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.expand-toggle-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 5%, var(--surface-2));
+}
+
+.expand-toggle-btn .arrow-icon {
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+
+.module-card.expanded .expand-toggle-btn .arrow-icon {
+  transform: rotate(180deg);
+}
+
+.module-card.completed {
+  border-left-color: var(--green) !important;
+  box-shadow: 0 4px 20px color-mix(in srgb, var(--green) 12%, transparent);
+}
+
+html[dir="rtl"] .module-card.completed {
+  border-right-color: var(--green) !important;
+  border-left-color: var(--line) !important;
+}
+
+.module-card.completed h3 {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+.study-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--green);
+  border-radius: 4px;
 }
 
